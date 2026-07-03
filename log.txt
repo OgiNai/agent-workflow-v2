@@ -1,0 +1,624 @@
+shared_ledger: 
+--------------------------------------------------
+[
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text='Create Python function to merge overlapping intervals.'
+    ),
+  ],
+  role='user'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""```python
+def merge_intervals(intervals):
+    \"\"\"
+    Merges overlapping intervals.
+    
+    Args:
+        intervals (list[list[int]]): A list of intervals where each interval is [start, end].
+        
+    Returns:
+        list[list[int]]: A list of merged intervals.
+    \"\"\"
+    if not intervals:
+        return []
+
+    # Sort intervals based on the start time
+    intervals.sort(key=lambda x: x[0])
+
+    merged = [intervals[0]]
+
+    for current in intervals[1:]:
+        last_merged = merged[-1]
+
+        # If the current interval overlaps with the last merged interval
+        # (i.e., current start <= last merged end), merge them
+        if current[0] <= last_merged[1]:
+            last_merged[1] = max(last_merged[1], current[1])
+        else:
+            # No overlap, add the current interval to the list
+            merged.append(current)
+
+    return merged
+```"""
+    ),
+  ],
+  role='model'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""### AUDIT REPORT: `merge_intervals`
+
+**STATUS: FAILED**
+
+The implementation is functionally correct for standard inputs but fails to account for data integrity, type safety, and edge-case robustness. A production-grade function must be defensive.
+
+#### 1. Mutation of Input Data (Side Effects)
+The function performs `intervals.sort()`. In Python, lists are passed by reference. This function **mutates the input list** provided by the caller. This is a dangerous side effect that can lead to unpredictable bugs in the calling scope.
+*   **Fix:** Use `sorted(intervals, key=lambda x: x[0])` to create a new list instead of sorting in-place.
+
+#### 2. Lack of Input Validation
+The function assumes the input is a well-formed list of lists. It does not verify:
+*   If `intervals` is actually a list.
+*   If each sub-element is a list/tuple of length 2.
+*   If the elements are integers (or comparable types).
+*   If `start > end` (e.g., `[5, 2]`), which would logically invalidate the interval but currently passes through silently.
+*   **Fix:** Add type checking and validation logic to ensure `len(interval) == 2` and `start <= end`.
+
+#### 3. Memory Inefficiency
+By appending to `merged` and modifying `last_merged` in place, you are modifying the sub-lists of the original input (if the input was a list of lists). If the user passes a list of lists, `merged[-1][1] = ...` modifies the original object. This is a violation of functional purity.
+
+#### 4. Edge Case: Empty Sub-lists
+If the input contains an empty sub-list (e.g., `[[1, 3], []]`), the code will raise an `IndexError` or `TypeError` when accessing `current[0]` or `last_merged[1]`.
+
+---
+
+### RECOMMENDED SECURE IMPLEMENTATION
+
+```python
+def merge_intervals(intervals):
+    if not intervals:
+        return []
+
+    # 1. Defensive copy and validation
+    try:
+        # Sort a copy to prevent side effects
+        sorted_intervals = sorted(intervals, key=lambda x: x[0])
+    except (TypeError, IndexError) as e:
+        raise ValueError("Invalid interval format. Expected list of [start, end].") from e
+
+    merged = []
+    for interval in sorted_intervals:
+        # 2. Validate interval structure
+        if not isinstance(interval, (list, tuple)) or len(interval) != 2:
+            raise ValueError(f"Invalid interval: {interval}")
+        
+        start, end = interval
+        if start > end:
+            raise ValueError(f"Invalid interval range: [{start}, {end}]")
+
+        # 3. Logic
+        if not merged or start > merged[-1][1]:
+            merged.append([start, end])
+        else:
+            # Update end time of the last interval
+            merged[-1][1] = max(merged[-1][1], end)
+
+    return merged
+```
+
+**Verdict:** The original code is a "happy path" script. It is unsuitable for a library or production environment where input data cannot be guaranteed."""
+    ),
+  ],
+  role='model'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""```python
+from typing import List, Union
+
+def merge_intervals(intervals: List[Union[List[int], tuple]]) -> List[List[int]]:
+    \"\"\"
+    Merges overlapping intervals while ensuring input integrity and functional purity.
+    
+    Args:
+        intervals: A list of intervals, where each interval is a list or tuple [start, end].
+        
+    Returns:
+        A new list of merged intervals.
+        
+    Raises:
+        ValueError: If input format is invalid or intervals are malformed.
+    \"\"\"
+    if not isinstance(intervals, list):
+        raise ValueError("Input must be a list of intervals.")
+    
+    if not intervals:
+        return []
+
+    # Validate structure and ensure start <= end before sorting
+    validated_intervals = []
+    for item in intervals:
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise ValueError(f"Invalid interval format: {item}. Expected [start, end].")
+        
+        start, end = item
+        if not (isinstance(start, (int, float)) and isinstance(end, (int, float))):
+            raise ValueError(f"Interval values must be numeric: {item}")
+            
+        if start > end:
+            raise ValueError(f"Invalid interval range (start > end): {item}")
+            
+        validated_intervals.append([start, end])
+
+    # Sort a copy to prevent side effects on the original input
+    sorted_intervals = sorted(validated_intervals, key=lambda x: x[0])
+
+    merged = []
+    for current in sorted_intervals:
+        # If merged is empty or current interval does not overlap with the last
+        if not merged or current[0] > merged[-1][1]:
+            # Append a new list to ensure we don't mutate original references
+            merged.append(list(current))
+        else:
+            # Overlap exists, update the end of the last interval
+            merged[-1][1] = max(merged[-1][1], current[1])
+
+    return merged
+```"""
+    ),
+  ],
+  role='model'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""### AUDIT REPORT: `merge_intervals` (Revision 2)
+
+**STATUS: PASSED**
+
+The revised implementation addresses the critical flaws identified in the previous audit. It is now robust, type-safe, and adheres to functional programming principles.
+
+#### Key Improvements Noted:
+1.  **Input Integrity:** The function now performs a deep validation pass, ensuring that every element is a valid numeric pair before processing. This prevents `IndexError` and `TypeError` during the sort or merge phases.
+2.  **Functional Purity:** By creating `validated_intervals` and appending `list(current)` to the `merged` list, you have successfully decoupled the output from the input references. The original input remains untouched.
+3.  **Defensive Programming:** The explicit check for `start > end` prevents logical corruption of the interval set, which is a common source of "silent" bugs in interval-based algorithms.
+4.  **Type Hinting:** The use of `typing` improves IDE support and static analysis, making the function easier to integrate into larger codebases.
+
+#### Minor Observations (For Production Hardening):
+*   **Floating Point Precision:** You allowed `float` inputs. Be aware that `0.1 + 0.2 != 0.3` in IEEE 754 floating-point arithmetic. If this function is used for high-precision financial or scientific data, consider using `decimal.Decimal` or a tolerance epsilon (`abs(a - b) < 1e-9`) for comparisons.
+*   **Performance:** The current implementation is $O(N \log N)$ due to sorting, which is optimal. The validation pass is $O(N)$, which is necessary for security. This is the correct trade-off for a production-grade utility.
+
+**Final Verdict:** This code is now production-ready. It is clean, defensive, and logically sound."""
+    ),
+  ],
+  role='model'
+)]
+
+====================================================================================================
+
+coder_ledger: 
+--------------------------------------------------
+[
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text='Create Python function to merge overlapping intervals.'
+    ),
+  ],
+  role='user'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""```python
+def merge_intervals(intervals):
+    \"\"\"
+    Merges overlapping intervals.
+    
+    Args:
+        intervals (list[list[int]]): A list of intervals where each interval is [start, end].
+        
+    Returns:
+        list[list[int]]: A list of merged intervals.
+    \"\"\"
+    if not intervals:
+        return []
+
+    # Sort intervals based on the start time
+    intervals.sort(key=lambda x: x[0])
+
+    merged = [intervals[0]]
+
+    for current in intervals[1:]:
+        last_merged = merged[-1]
+
+        # If the current interval overlaps with the last merged interval
+        # (i.e., current start <= last merged end), merge them
+        if current[0] <= last_merged[1]:
+            last_merged[1] = max(last_merged[1], current[1])
+        else:
+            # No overlap, add the current interval to the list
+            merged.append(current)
+
+    return merged
+```"""
+    ),
+  ],
+  role='model'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""### AUDIT REPORT: `merge_intervals`
+
+**STATUS: FAILED**
+
+The implementation is functionally correct for standard inputs but fails to account for data integrity, type safety, and edge-case robustness. A production-grade function must be defensive.
+
+#### 1. Mutation of Input Data (Side Effects)
+The function performs `intervals.sort()`. In Python, lists are passed by reference. This function **mutates the input list** provided by the caller. This is a dangerous side effect that can lead to unpredictable bugs in the calling scope.
+*   **Fix:** Use `sorted(intervals, key=lambda x: x[0])` to create a new list instead of sorting in-place.
+
+#### 2. Lack of Input Validation
+The function assumes the input is a well-formed list of lists. It does not verify:
+*   If `intervals` is actually a list.
+*   If each sub-element is a list/tuple of length 2.
+*   If the elements are integers (or comparable types).
+*   If `start > end` (e.g., `[5, 2]`), which would logically invalidate the interval but currently passes through silently.
+*   **Fix:** Add type checking and validation logic to ensure `len(interval) == 2` and `start <= end`.
+
+#### 3. Memory Inefficiency
+By appending to `merged` and modifying `last_merged` in place, you are modifying the sub-lists of the original input (if the input was a list of lists). If the user passes a list of lists, `merged[-1][1] = ...` modifies the original object. This is a violation of functional purity.
+
+#### 4. Edge Case: Empty Sub-lists
+If the input contains an empty sub-list (e.g., `[[1, 3], []]`), the code will raise an `IndexError` or `TypeError` when accessing `current[0]` or `last_merged[1]`.
+
+---
+
+### RECOMMENDED SECURE IMPLEMENTATION
+
+```python
+def merge_intervals(intervals):
+    if not intervals:
+        return []
+
+    # 1. Defensive copy and validation
+    try:
+        # Sort a copy to prevent side effects
+        sorted_intervals = sorted(intervals, key=lambda x: x[0])
+    except (TypeError, IndexError) as e:
+        raise ValueError("Invalid interval format. Expected list of [start, end].") from e
+
+    merged = []
+    for interval in sorted_intervals:
+        # 2. Validate interval structure
+        if not isinstance(interval, (list, tuple)) or len(interval) != 2:
+            raise ValueError(f"Invalid interval: {interval}")
+        
+        start, end = interval
+        if start > end:
+            raise ValueError(f"Invalid interval range: [{start}, {end}]")
+
+        # 3. Logic
+        if not merged or start > merged[-1][1]:
+            merged.append([start, end])
+        else:
+            # Update end time of the last interval
+            merged[-1][1] = max(merged[-1][1], end)
+
+    return merged
+```
+
+**Verdict:** The original code is a "happy path" script. It is unsuitable for a library or production environment where input data cannot be guaranteed."""
+    ),
+  ],
+  role='user'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""```python
+from typing import List, Union
+
+def merge_intervals(intervals: List[Union[List[int], tuple]]) -> List[List[int]]:
+    \"\"\"
+    Merges overlapping intervals while ensuring input integrity and functional purity.
+    
+    Args:
+        intervals: A list of intervals, where each interval is a list or tuple [start, end].
+        
+    Returns:
+        A new list of merged intervals.
+        
+    Raises:
+        ValueError: If input format is invalid or intervals are malformed.
+    \"\"\"
+    if not isinstance(intervals, list):
+        raise ValueError("Input must be a list of intervals.")
+    
+    if not intervals:
+        return []
+
+    # Validate structure and ensure start <= end before sorting
+    validated_intervals = []
+    for item in intervals:
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise ValueError(f"Invalid interval format: {item}. Expected [start, end].")
+        
+        start, end = item
+        if not (isinstance(start, (int, float)) and isinstance(end, (int, float))):
+            raise ValueError(f"Interval values must be numeric: {item}")
+            
+        if start > end:
+            raise ValueError(f"Invalid interval range (start > end): {item}")
+            
+        validated_intervals.append([start, end])
+
+    # Sort a copy to prevent side effects on the original input
+    sorted_intervals = sorted(validated_intervals, key=lambda x: x[0])
+
+    merged = []
+    for current in sorted_intervals:
+        # If merged is empty or current interval does not overlap with the last
+        if not merged or current[0] > merged[-1][1]:
+            # Append a new list to ensure we don't mutate original references
+            merged.append(list(current))
+        else:
+            # Overlap exists, update the end of the last interval
+            merged[-1][1] = max(merged[-1][1], current[1])
+
+    return merged
+```"""
+    ),
+  ],
+  role='model'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""### AUDIT REPORT: `merge_intervals` (Revision 2)
+
+**STATUS: PASSED**
+
+The revised implementation addresses the critical flaws identified in the previous audit. It is now robust, type-safe, and adheres to functional programming principles.
+
+#### Key Improvements Noted:
+1.  **Input Integrity:** The function now performs a deep validation pass, ensuring that every element is a valid numeric pair before processing. This prevents `IndexError` and `TypeError` during the sort or merge phases.
+2.  **Functional Purity:** By creating `validated_intervals` and appending `list(current)` to the `merged` list, you have successfully decoupled the output from the input references. The original input remains untouched.
+3.  **Defensive Programming:** The explicit check for `start > end` prevents logical corruption of the interval set, which is a common source of "silent" bugs in interval-based algorithms.
+4.  **Type Hinting:** The use of `typing` improves IDE support and static analysis, making the function easier to integrate into larger codebases.
+
+#### Minor Observations (For Production Hardening):
+*   **Floating Point Precision:** You allowed `float` inputs. Be aware that `0.1 + 0.2 != 0.3` in IEEE 754 floating-point arithmetic. If this function is used for high-precision financial or scientific data, consider using `decimal.Decimal` or a tolerance epsilon (`abs(a - b) < 1e-9`) for comparisons.
+*   **Performance:** The current implementation is $O(N \log N)$ due to sorting, which is optimal. The validation pass is $O(N)$, which is necessary for security. This is the correct trade-off for a production-grade utility.
+
+**Final Verdict:** This code is now production-ready. It is clean, defensive, and logically sound."""
+    ),
+  ],
+  role='user'
+)]
+
+====================================================================================================
+
+auditor_ledger: 
+--------------------------------------------------
+[
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text='Create Python function to merge overlapping intervals.'
+    ),
+  ],
+  role='user'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""```python
+def merge_intervals(intervals):
+    \"\"\"
+    Merges overlapping intervals.
+    
+    Args:
+        intervals (list[list[int]]): A list of intervals where each interval is [start, end].
+        
+    Returns:
+        list[list[int]]: A list of merged intervals.
+    \"\"\"
+    if not intervals:
+        return []
+
+    # Sort intervals based on the start time
+    intervals.sort(key=lambda x: x[0])
+
+    merged = [intervals[0]]
+
+    for current in intervals[1:]:
+        last_merged = merged[-1]
+
+        # If the current interval overlaps with the last merged interval
+        # (i.e., current start <= last merged end), merge them
+        if current[0] <= last_merged[1]:
+            last_merged[1] = max(last_merged[1], current[1])
+        else:
+            # No overlap, add the current interval to the list
+            merged.append(current)
+
+    return merged
+```"""
+    ),
+  ],
+  role='user'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""### AUDIT REPORT: `merge_intervals`
+
+**STATUS: FAILED**
+
+The implementation is functionally correct for standard inputs but fails to account for data integrity, type safety, and edge-case robustness. A production-grade function must be defensive.
+
+#### 1. Mutation of Input Data (Side Effects)
+The function performs `intervals.sort()`. In Python, lists are passed by reference. This function **mutates the input list** provided by the caller. This is a dangerous side effect that can lead to unpredictable bugs in the calling scope.
+*   **Fix:** Use `sorted(intervals, key=lambda x: x[0])` to create a new list instead of sorting in-place.
+
+#### 2. Lack of Input Validation
+The function assumes the input is a well-formed list of lists. It does not verify:
+*   If `intervals` is actually a list.
+*   If each sub-element is a list/tuple of length 2.
+*   If the elements are integers (or comparable types).
+*   If `start > end` (e.g., `[5, 2]`), which would logically invalidate the interval but currently passes through silently.
+*   **Fix:** Add type checking and validation logic to ensure `len(interval) == 2` and `start <= end`.
+
+#### 3. Memory Inefficiency
+By appending to `merged` and modifying `last_merged` in place, you are modifying the sub-lists of the original input (if the input was a list of lists). If the user passes a list of lists, `merged[-1][1] = ...` modifies the original object. This is a violation of functional purity.
+
+#### 4. Edge Case: Empty Sub-lists
+If the input contains an empty sub-list (e.g., `[[1, 3], []]`), the code will raise an `IndexError` or `TypeError` when accessing `current[0]` or `last_merged[1]`.
+
+---
+
+### RECOMMENDED SECURE IMPLEMENTATION
+
+```python
+def merge_intervals(intervals):
+    if not intervals:
+        return []
+
+    # 1. Defensive copy and validation
+    try:
+        # Sort a copy to prevent side effects
+        sorted_intervals = sorted(intervals, key=lambda x: x[0])
+    except (TypeError, IndexError) as e:
+        raise ValueError("Invalid interval format. Expected list of [start, end].") from e
+
+    merged = []
+    for interval in sorted_intervals:
+        # 2. Validate interval structure
+        if not isinstance(interval, (list, tuple)) or len(interval) != 2:
+            raise ValueError(f"Invalid interval: {interval}")
+        
+        start, end = interval
+        if start > end:
+            raise ValueError(f"Invalid interval range: [{start}, {end}]")
+
+        # 3. Logic
+        if not merged or start > merged[-1][1]:
+            merged.append([start, end])
+        else:
+            # Update end time of the last interval
+            merged[-1][1] = max(merged[-1][1], end)
+
+    return merged
+```
+
+**Verdict:** The original code is a "happy path" script. It is unsuitable for a library or production environment where input data cannot be guaranteed."""
+    ),
+  ],
+  role='model'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""```python
+from typing import List, Union
+
+def merge_intervals(intervals: List[Union[List[int], tuple]]) -> List[List[int]]:
+    \"\"\"
+    Merges overlapping intervals while ensuring input integrity and functional purity.
+    
+    Args:
+        intervals: A list of intervals, where each interval is a list or tuple [start, end].
+        
+    Returns:
+        A new list of merged intervals.
+        
+    Raises:
+        ValueError: If input format is invalid or intervals are malformed.
+    \"\"\"
+    if not isinstance(intervals, list):
+        raise ValueError("Input must be a list of intervals.")
+    
+    if not intervals:
+        return []
+
+    # Validate structure and ensure start <= end before sorting
+    validated_intervals = []
+    for item in intervals:
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            raise ValueError(f"Invalid interval format: {item}. Expected [start, end].")
+        
+        start, end = item
+        if not (isinstance(start, (int, float)) and isinstance(end, (int, float))):
+            raise ValueError(f"Interval values must be numeric: {item}")
+            
+        if start > end:
+            raise ValueError(f"Invalid interval range (start > end): {item}")
+            
+        validated_intervals.append([start, end])
+
+    # Sort a copy to prevent side effects on the original input
+    sorted_intervals = sorted(validated_intervals, key=lambda x: x[0])
+
+    merged = []
+    for current in sorted_intervals:
+        # If merged is empty or current interval does not overlap with the last
+        if not merged or current[0] > merged[-1][1]:
+            # Append a new list to ensure we don't mutate original references
+            merged.append(list(current))
+        else:
+            # Overlap exists, update the end of the last interval
+            merged[-1][1] = max(merged[-1][1], current[1])
+
+    return merged
+```"""
+    ),
+  ],
+  role='user'
+), 
+--------------------------------------------------
+Content(
+  parts=[
+    Part(
+      text="""### AUDIT REPORT: `merge_intervals` (Revision 2)
+
+**STATUS: PASSED**
+
+The revised implementation addresses the critical flaws identified in the previous audit. It is now robust, type-safe, and adheres to functional programming principles.
+
+#### Key Improvements Noted:
+1.  **Input Integrity:** The function now performs a deep validation pass, ensuring that every element is a valid numeric pair before processing. This prevents `IndexError` and `TypeError` during the sort or merge phases.
+2.  **Functional Purity:** By creating `validated_intervals` and appending `list(current)` to the `merged` list, you have successfully decoupled the output from the input references. The original input remains untouched.
+3.  **Defensive Programming:** The explicit check for `start > end` prevents logical corruption of the interval set, which is a common source of "silent" bugs in interval-based algorithms.
+4.  **Type Hinting:** The use of `typing` improves IDE support and static analysis, making the function easier to integrate into larger codebases.
+
+#### Minor Observations (For Production Hardening):
+*   **Floating Point Precision:** You allowed `float` inputs. Be aware that `0.1 + 0.2 != 0.3` in IEEE 754 floating-point arithmetic. If this function is used for high-precision financial or scientific data, consider using `decimal.Decimal` or a tolerance epsilon (`abs(a - b) < 1e-9`) for comparisons.
+*   **Performance:** The current implementation is $O(N \log N)$ due to sorting, which is optimal. The validation pass is $O(N)$, which is necessary for security. This is the correct trade-off for a production-grade utility.
+
+**Final Verdict:** This code is now production-ready. It is clean, defensive, and logically sound."""
+    ),
+  ],
+  role='model'
+)]

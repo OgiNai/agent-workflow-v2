@@ -1,0 +1,50 @@
+"""Planner agent.
+
+Milestone 1 keeps this deterministic to avoid wasting LLM calls on routing. The class still exposes an
+agent-like interface and records a planner step, so it can be switched to an LLM planner later.
+"""
+
+import time
+
+from apps.schemas.agent_outputs import PlannerOutput
+from apps.schemas.workflow import RouterResult, WorkflowPlan
+
+
+class PlannerAgent:
+    agent_name = "planner"
+
+    async def run(self, router_result: RouterResult, max_rounds: int) -> tuple[WorkflowPlan, PlannerOutput, int]:
+        started = time.perf_counter()
+        requires_generation = router_result.task_type == "generate"
+        steps = []
+        if requires_generation:
+            steps.append("code_writer.generate")
+        steps.extend(
+            [
+                "inspection.reviewer",
+                "inspection.security_auditor",
+                "code_writer.refactor_or_repair",
+                "test_generator",
+                "test_runner",
+                "evaluator",
+            ]
+        )
+        output = PlannerOutput(
+            task_type=router_result.task_type,
+            requires_generation=requires_generation,
+            requires_refactor=True,
+            requires_tests=True,
+            steps=steps,
+            notes=["Deterministic planner used for Milestone 1."],
+        )
+        plan = WorkflowPlan(
+            task_type=output.task_type,
+            requires_generation=output.requires_generation,
+            requires_refactor=output.requires_refactor,
+            requires_tests=output.requires_tests,
+            max_rounds=max_rounds,
+            steps=output.steps,
+            notes=output.notes,
+        )
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        return plan, output, latency_ms
