@@ -18,7 +18,7 @@ class InspectionAgent(BaseAgent):
     @overload
     async def run(self, *, mode: Literal["security_auditor"], instruction: str, code: str) -> tuple[SecurityAuditOutput, int]: ...
 
-    async def run(self, *, mode: InspectionMode, instruction: str, code: str):
+    async def run(self, *, mode: InspectionMode, instruction: str, code: str) -> tuple[ReviewerOutput | SecurityAuditOutput, int]:
         schema = ReviewerOutput if mode == "reviewer" else SecurityAuditOutput
         payload = {
             "mode": mode,

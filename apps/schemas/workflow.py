@@ -5,20 +5,20 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-ResolvedTaskType = Literal["generate", "review", "refactor", "review_refactor"]
-ResolvedInputType = Literal["inline_code", "file_path", "natural_language"]
+ResolvedTaskType = Literal["generate", "review_refactor"]
+SourceType = Literal["none", "inline_code", "file_path"]
 
 
 class RouterResult(BaseModel):
     """Normalized result produced by the deterministic input router."""
 
     task_type: ResolvedTaskType
-    input_type: ResolvedInputType
+    source_type: SourceType
     instruction: str
     code_available: bool
     code: str | None = None
     source_path: str | None = None
-    original_content: str | None = None
+    #original_content: str | None = None
 
 
 class WorkflowPlan(BaseModel):

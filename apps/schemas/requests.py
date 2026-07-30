@@ -6,29 +6,43 @@ from pydantic import BaseModel, Field, model_validator
 
 from apps.core.constants import DEFAULT_MAX_ROUNDS, MAX_ROUNDS_LIMIT
 
-TaskType = Literal["auto", "generate", "review", "refactor", "review_refactor"]
-InputType = Literal["auto", "inline_code", "file_path", "natural_language"]
+TaskType = Literal["auto", "generate", "review_refactor"]
+#InputType = Literal["auto", "inline_code", "file_path", "natural_language"]
 
 
 class ReviewRequest(BaseModel):
     """Unified request for code generation, review, refactoring, and repair workflows."""
 
     task_type: TaskType = "auto"
-    input_type: InputType = "auto"
-    instruction: str = Field(..., min_length=1, description="User goal or instruction.")
-    content: str | None = Field(default=None, description="Inline code or natural-language request.")
-    file_path: str | None = Field(default=None, description="Relative path to a code file inside PROJECT_PATH.")
+    #input_type: InputType = "auto"
+    instruction: str = Field(
+        ..., 
+        min_length=1, 
+        description=(
+            "Natural-language feature request or instructions "
+            "for reviewing/refactoring existing code."
+        )
+    )
+    code: str | None = Field(default=None, description="Existing source code supplied inline.")
+    file_path: str | None = Field(default=None, description="Path to an existing source file.")
     max_rounds: int = Field(default=DEFAULT_MAX_ROUNDS, ge=1, le=MAX_ROUNDS_LIMIT)
     save_artifacts: bool = True
 
-    @model_validator(mode="after")
-    def validate_input_source(self) -> "ReviewRequest":
-        if not self.content and not self.file_path:
-            raise ValueError("Either content or file_path must be provided.")
-        if self.input_type == "file_path" and not self.file_path:
-            raise ValueError("file_path is required when input_type='file_path'.")
-        if self.task_type == "generate" and self.file_path and not self.content:
-            raise ValueError("task_type='generate' should use natural-language content, not only file_path.")
+    @model_validator(mode="after")  
+    def validate_request(self) -> "ReviewRequest":
+        has_code = self.code is not None and bool(self.code.strip())
+        has_file = self.file_path is not None and bool(self.file_path.strip())
+        has_source = has_code or has_file
+
+        if has_code and has_file:
+            raise ValueError("Provide either code or file_path, not both.")
+
+        if self.task_type == "generate" and has_source:
+            raise ValueError("task_type='generate' cannot include existing source code.")
+
+        if self.task_type == "review_refactor" and not has_source:
+            raise ValueError("task_type='review_refactor' requires code or file_path.")
+        
         return self
 
 

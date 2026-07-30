@@ -1,6 +1,6 @@
 """Shared Gemini client helpers."""
 
-import asyncio
+#import asyncio
 import json
 import logging
 from typing import TypeVar
@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 
-from apps.settings import get_auth_settings
+from apps.core.settings import get_auth_settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ _client: genai.Client | None = None
 DEFAULT_MODEL = "gemini-3.1-flash-lite"
 
 
-def get_gemini_client() -> genai.Client:
+def _get_gemini_client() -> genai.Client:
     """Create the Gemini client lazily so FastAPI startup stays lightweight."""
     global _client
     if _client is None:
@@ -40,18 +40,15 @@ async def generate_text(
 ) -> str:
     """Call Gemini and return raw text."""
 
-    def _call() -> str:
-        response = get_gemini_client().models.generate_content(
-            model=model_name,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=temperature,
-            ),
-            contents=prompt,
-        )
-        return response.text or ""
-
-    return await asyncio.to_thread(_call)
+    response = await _get_gemini_client().aio.models.generate_content(
+        model=model_name,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=temperature,
+        ),
+        contents=prompt,
+    )
+    return response.text or ""
 
 
 async def generate_structured(
@@ -64,22 +61,28 @@ async def generate_structured(
 ) -> T:
     """Call Gemini with a Pydantic response schema and parse the result."""
 
-    def _call() -> str:
-        response = get_gemini_client().models.generate_content(
-            model=model_name,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=temperature,
-                response_mime_type="application/json",
-                response_schema=response_schema,
-            ),
-            contents=prompt,
-        )
-        return response.text or "{}"
+    response = await _get_gemini_client().aio.models.generate_content(
+        model=model_name,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=temperature,
+            response_mime_type="application/json",
+            response_schema=response_schema,
+        ),
+        contents=prompt,
+    )
 
-    raw = await asyncio.to_thread(_call)
+    raw = response.text or "{}"
     try:
         return response_schema.model_validate_json(raw)
     except Exception:
         logger.warning("Structured model parsing failed; raw response=%s", raw)
         return response_schema.model_validate(json.loads(raw))
+
+async def close_gemini_client() -> None:
+    """Close the async Gemini client during FastAPI shutdown."""
+    global _client
+
+    if _client is not None:
+        await _client.aio.aclose()
+        _client = None

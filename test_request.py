@@ -3,7 +3,7 @@ import json
 import os
 
 from apps.agent_with_tools import multiline_input
-from apps.settings import get_auth_settings
+from apps.core.settings import get_auth_settings
 
 
 def send_request(endpoint: str, content: str, rounds: int = 3, ) -> str:

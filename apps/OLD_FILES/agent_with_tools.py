@@ -5,7 +5,7 @@ from pathlib import Path
 from google import genai
 from google.genai import types
 
-from apps.settings import get_auth_settings
+from apps.core.settings import get_auth_settings
 
 import logging
 

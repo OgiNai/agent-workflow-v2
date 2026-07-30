@@ -14,7 +14,7 @@ class ReviewResponse(BaseModel):
     workflow_run_id: UUID
     status: str
     task_type: str
-    input_type: str
+    source_type: str
     final_decision: str
     summary: str
     final_code: str | None = None

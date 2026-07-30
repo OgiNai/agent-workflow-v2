@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from apps.code_endpoints import router as code_router
 from apps.config import LOGGING_CONFIG
-from apps.settings import get_auth_settings
+from apps.core.settings import get_auth_settings
 
 logging.config.dictConfig(LOGGING_CONFIG)
 

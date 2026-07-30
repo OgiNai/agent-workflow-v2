@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class PlannerOutput(BaseModel):
-    task_type: Literal["generate", "review", "refactor", "review_refactor"]
+    task_type: Literal["generate", "review_refactor"]
     requires_generation: bool
     requires_refactor: bool = True
     requires_tests: bool = True
@@ -41,7 +41,7 @@ class TestGeneratorOutput(BaseModel):
 
 
 class EvaluatorOutput(BaseModel):
-    final_decision: Literal["pass", "pass_with_warnings", "retry", "fail"]
+    final_decision: Literal["pass", "pass_with_warnings", "retry"]
     rule_score: float = Field(ge=0, le=1)
     execution_score: float = Field(ge=0, le=1)
     llm_score: float = Field(ge=0, le=1)

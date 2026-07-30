@@ -8,7 +8,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 import secrets
 
-from apps.settings import get_auth_settings
+from apps.core.settings import get_auth_settings
 from apps.multi_agent_system import agents_result
 from apps.agent_with_tools import agent_result
 

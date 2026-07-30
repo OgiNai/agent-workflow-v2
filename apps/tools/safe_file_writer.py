@@ -2,29 +2,20 @@
 
 import hashlib
 import time
-from pathlib import Path
 from uuid import UUID
 
-from apps.core.constants import ALLOWED_WRITE_EXTENSIONS, REVIEW_RUNS_DIR_NAME, WORKSPACE_DIR_NAME
-from apps.settings import get_auth_settings
-from apps.tools.tool_result import ToolResult
+from apps.core.constants import ALLOWED_WRITE_EXTENSIONS
 
-
-def get_workspace_run_dir(workflow_run_id: UUID | str) -> Path:
-    project_root = Path(get_auth_settings().project_path).resolve()
-    run_dir = project_root / WORKSPACE_DIR_NAME / REVIEW_RUNS_DIR_NAME / str(workflow_run_id)
-    run_dir.mkdir(parents=True, exist_ok=True)
-    return run_dir.resolve()
+#from apps.core.settings import get_auth_settings
+from apps.schemas.tools import ToolResult
+from apps.tools.file_path_helpers import resolve_artifact_path
 
 
 def write_artifact(workflow_run_id: UUID | str, relative_path: str, content: str) -> ToolResult:
     """Write an artifact into workspace/review_runs/{workflow_run_id}/ only."""
     started = time.perf_counter()
     try:
-        run_dir = get_workspace_run_dir(workflow_run_id)
-        target = (run_dir / relative_path).resolve()
-        if not target.is_relative_to(run_dir):
-            raise ValueError("Artifact path escapes workflow workspace.")
+        target = resolve_artifact_path(workflow_run_id, relative_path)
         if target.suffix not in ALLOWED_WRITE_EXTENSIONS:
             raise ValueError(f"Unsupported artifact extension: {target.suffix}")
         target.parent.mkdir(parents=True, exist_ok=True)

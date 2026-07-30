@@ -12,10 +12,17 @@ from apps.agents.planner_agent import PlannerAgent
 from apps.agents.test_generator_agent import TestGeneratorAgent
 from apps.evals.execution_eval import calculate_execution_score
 from apps.evals.rule_based import calculate_rule_score
-from apps.schemas.agent_outputs import EvaluatorOutput, ReviewerOutput, SecurityAuditOutput
+from apps.schemas.agent_outputs import (
+    EvaluatorOutput,  # , ReviewerOutput, SecurityAuditOutput
+)
 from apps.schemas.requests import ReviewRequest
 from apps.schemas.responses import ReviewResponse
-from apps.schemas.workflow import ArtifactInfo, CandidateCode, WorkflowContext, WorkflowStepTrace
+from apps.schemas.workflow import (  # , ArtifactInfo
+    CandidateCode,
+    RouterResult,
+    WorkflowContext,
+    WorkflowStepTrace,
+)
 from apps.tools.test_runner import TestRunResult, run_pytest_for_code
 from apps.workflows.artifact_manager import save_artifact
 from apps.workflows.input_router import route_input
@@ -27,16 +34,37 @@ logger = logging.getLogger(__name__)
 class CodeWorkflow:
     """Orchestrates the unified workflow for both feature requests and code review requests."""
 
-    def __init__(self) -> None:
-        self.planner = PlannerAgent()
-        self.code_writer = CodeWriterAgent()
-        self.inspector = InspectionAgent()
-        self.test_generator = TestGeneratorAgent()
-        self.evaluator = EvaluatorAgent()
+    # def __init__(self) -> None:
+    #    self.planner = PlannerAgent()
+    #    self.code_writer = CodeWriterAgent()
+    #    self.inspector = InspectionAgent()
+    #    self.test_generator = TestGeneratorAgent()
+    #    self.evaluator = EvaluatorAgent()
+
+    def __init__(
+        self,
+        *,
+        planner: PlannerAgent | None = None,
+        code_writer: CodeWriterAgent | None = None,
+        inspector: InspectionAgent | None = None,
+        test_generator: TestGeneratorAgent | None = None,
+        evaluator: EvaluatorAgent | None = None,
+        # test_runner: TestRunner,
+        # artifact_manager: ArtifactManager,
+    ) -> None:
+        self.planner = planner or PlannerAgent()
+        self.code_writer = code_writer or CodeWriterAgent()
+        self.inspector = inspector or InspectionAgent()
+        self.test_generator = test_generator or TestGeneratorAgent()
+        self.evaluator = evaluator or EvaluatorAgent()
+        # self.test_runner = test_runner
+        # self.artifact_manager = artifact_manager
 
     async def run(self, request: ReviewRequest) -> ReviewResponse:
         workflow_run_id = uuid4()
-        context = WorkflowContext(workflow_run_id=workflow_run_id, request_id=str(workflow_run_id))
+        context = WorkflowContext(
+            workflow_run_id=workflow_run_id, request_id=str(workflow_run_id)
+        )
         rounds_executed = 0
         final_evaluation: EvaluatorOutput | None = None
         final_code: str | None = None
@@ -49,11 +77,13 @@ class CodeWorkflow:
                     step_name="input_router",
                     step_type="workflow",
                     status="success",
-                    detail=f"Resolved {router_result.input_type} -> {router_result.task_type}",
+                    detail=f"Resolved {router_result.source_type} -> {router_result.task_type}",
                 )
             )
 
-            plan, planner_output, planner_latency = await self.planner.run(router_result, request.max_rounds)
+            plan, planner_output, planner_latency = await self.planner.run(
+                router_result, request.max_rounds
+            )
             context.traces.append(
                 WorkflowStepTrace(
                     step_name="planner",
@@ -64,7 +94,9 @@ class CodeWorkflow:
                 )
             )
 
-            candidate = await self._create_initial_candidate(request, router_result, plan.requires_generation, context)
+            candidate = await self._create_initial_candidate(
+                request, router_result, plan.requires_generation, context
+            )
             previous_evaluation: EvaluatorOutput | None = None
 
             for round_number in range(1, plan.max_rounds + 1):
@@ -104,7 +136,11 @@ class CodeWorkflow:
                     security=security,
                     evaluation=previous_evaluation,
                 )
-                candidate = CandidateCode(code=writer_output.code, origin=f"code_writer.{writer_mode}", round_number=round_number)
+                candidate = CandidateCode(
+                    code=writer_output.code,
+                    origin=f"code_writer.{writer_mode}",
+                    round_number=round_number,
+                )
                 final_code = candidate.code
                 self._trace_agent(
                     context,
@@ -126,12 +162,16 @@ class CodeWorkflow:
                     metadata=tests_output.model_dump(exclude={"tests"}),
                 )
 
-                test_result = run_pytest_for_code(candidate.code, tests_output.tests)
+                test_result = await run_pytest_for_code(
+                    candidate.code, tests_output.tests
+                )
                 context.traces.append(
                     WorkflowStepTrace(
                         step_name="test_runner",
                         step_type="tool",
-                        status="success" if test_result.status == "passed" else "failed",
+                        status="success"
+                        if test_result.status == "passed"
+                        else "failed",
                         latency_ms=test_result.duration_ms,
                         round_number=round_number,
                         metadata=test_result.model_dump(),
@@ -149,12 +189,12 @@ class CodeWorkflow:
                     rule_score=rule_score,
                     execution_score=execution_score,
                     round_number=round_number,
-                    max_rounds=plan.max_rounds,
+                    # max_rounds=plan.max_rounds,
                 )
                 evaluation.reasons.extend(rule_notes)
-                if round_number >= plan.max_rounds and evaluation.final_decision == "retry":
-                    evaluation.final_decision = "fail"
-                    evaluation.reasons.append("Max rounds reached; retry converted to fail.")
+                # if round_number >= plan.max_rounds and evaluation.final_decision == "retry":
+                #    evaluation.final_decision = "fail"
+                #    evaluation.reasons.append("Max rounds reached; retry converted to fail.")
 
                 final_evaluation = evaluation
                 previous_evaluation = evaluation
@@ -196,14 +236,18 @@ class CodeWorkflow:
                         detail="Retry routes back to Reviewer with latest candidate code.",
                     )
                 )
-
-            status = "completed" if final_evaluation and final_evaluation.final_decision in {"pass", "pass_with_warnings"} else "completed_with_warnings"
+            final_decision = self._resolve_final_decision(final_evaluation)
+            status = (
+                "completed"
+                if final_decision in {"pass", "pass_with_warnings"}
+                else "completed_with_warnings"
+            )
             return ReviewResponse(
                 workflow_run_id=workflow_run_id,
                 status=status,
                 task_type=router_result.task_type,
-                input_type=router_result.input_type,
-                final_decision=final_evaluation.final_decision if final_evaluation else "fail",
+                source_type=router_result.source_type,
+                final_decision=final_decision,
                 summary=final_summary,
                 final_code=final_code,
                 evaluation=final_evaluation,
@@ -225,8 +269,8 @@ class CodeWorkflow:
                 workflow_run_id=workflow_run_id,
                 status="failed",
                 task_type=request.task_type,
-                input_type=request.input_type,
-                final_decision="fail",
+                source_type="none",  # request.input_type,
+                final_decision="failed",
                 summary=f"Workflow failed: {exc}",
                 final_code=final_code,
                 evaluation=final_evaluation,
@@ -235,12 +279,22 @@ class CodeWorkflow:
                 steps=context.traces,
             )
 
-    async def _create_initial_candidate(self, request, router_result, requires_generation: bool, context: WorkflowContext) -> CandidateCode:
+    async def _create_initial_candidate(
+        self,
+        request: ReviewRequest,
+        router_result: RouterResult,
+        requires_generation: bool,
+        context: WorkflowContext,
+    ) -> CandidateCode:
+        """
+        Returns either generated code if request is for new feature or original code provided
+        in the request
+        """
         if requires_generation:
             writer_output, writer_latency = await self.code_writer.run(
                 mode="generate",
                 instruction=router_result.instruction,
-                code=router_result.original_content,
+                code=None,  # router_result.original_content,
             )
             self._trace_agent(
                 context,
@@ -257,10 +311,13 @@ class CodeWorkflow:
                     writer_output.code,
                 )
                 context.artifacts.append(artifact)
-            return CandidateCode(code=writer_output.code, origin="code_writer.generate", round_number=0)
+            return CandidateCode(
+                code=writer_output.code, origin="code_writer.generate", round_number=0
+            )
 
         if not router_result.code:
             raise ValueError("No code available for review/refactor workflow.")
+
         if request.save_artifacts:
             artifact = save_artifact(
                 context.workflow_run_id,
@@ -269,7 +326,17 @@ class CodeWorkflow:
                 router_result.code,
             )
             context.artifacts.append(artifact)
-        return CandidateCode(code=router_result.code, origin="user_input", round_number=0)
+        return CandidateCode(
+            code=router_result.code, origin="user_input", round_number=0
+        )
+
+    @staticmethod
+    def _resolve_final_decision(evaluation: EvaluatorOutput | None) -> str:
+
+        if evaluation.final_decision in {"pass", "pass_with_warnings"}:
+            return evaluation.final_decision
+
+        return "unresolved"
 
     @staticmethod
     def _trace_agent(
@@ -302,10 +369,20 @@ class CodeWorkflow:
         evaluation: EvaluatorOutput,
     ) -> None:
         context.artifacts.append(
-            save_artifact(context.workflow_run_id, "candidate_code", f"round_{round_number}_candidate.py", candidate_code)
+            save_artifact(
+                context.workflow_run_id,
+                "candidate_code",
+                f"round_{round_number}_candidate.py",
+                candidate_code,
+            )
         )
         context.artifacts.append(
-            save_artifact(context.workflow_run_id, "generated_tests", f"round_{round_number}_tests.py", tests)
+            save_artifact(
+                context.workflow_run_id,
+                "generated_tests",
+                f"round_{round_number}_tests.py",
+                tests,
+            )
         )
         context.artifacts.append(
             save_artifact(

@@ -40,7 +40,14 @@ Cover normal behavior, edge cases, and failure behavior. Return complete pytest 
 
 EVALUATOR_PROMPT = """
 You are an evaluation judge for a code review/refactoring workflow.
-Score the final candidate using reviewer feedback, security audit, generated tests, and test execution output.
-Return a final decision: pass, pass_with_warnings, retry, or fail.
-Use retry only when another repair round is likely to fix the issue.
+
+Score the current candidate using reviewer feedback, security audit, generated tests,
+rule-based checks, and test execution output.
+
+Return one final_decision:
+- pass
+- pass_with_warnings
+- retry
+
+The workflow orchestrator owns retry limits and terminal workflow status.
 """

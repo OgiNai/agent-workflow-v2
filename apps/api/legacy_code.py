@@ -26,9 +26,9 @@ async def generate_code(request_data: GenerateSchema, _: None = Depends(verify_b
     result = await run_code_workflow(
         ReviewRequest(
             task_type="generate",
-            input_type="natural_language",
+            #input_type="natural_language",
             instruction=request_data.generate_content,
-            content=request_data.generate_content,
+            #content=request_data.generate_content,
             max_rounds=request_data.generate_rounds,
             save_artifacts=True,
         )
@@ -41,9 +41,9 @@ async def review_code(request_data: ReviewSchema, _: None = Depends(verify_beare
     result = await run_code_workflow(
         ReviewRequest(
             task_type="review_refactor",
-            input_type="inline_code",
+            #input_type="inline_code",
             instruction="Review and improve this code.",
-            content=request_data.review_content,
+            code=request_data.review_content,
             max_rounds=2,
             save_artifacts=True,
         )

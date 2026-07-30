@@ -7,7 +7,7 @@ import json
 from pydantic import BaseModel, Field
 from typing import List
 
-from apps.settings import get_auth_settings
+from apps.core.settings import get_auth_settings
 
 import logging
 

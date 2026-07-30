@@ -5,7 +5,7 @@ import secrets
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from apps.settings import get_auth_settings
+from apps.core.settings import get_auth_settings
 
 security = HTTPBearer()
 
