@@ -13,7 +13,9 @@ from apps.schemas.workflow import RouterResult, WorkflowPlan
 class PlannerAgent:
     agent_name = "planner"
 
-    async def run(self, router_result: RouterResult, max_rounds: int) -> tuple[WorkflowPlan, PlannerOutput, int]:
+    async def run(
+        self, router_result: RouterResult, max_rounds: int
+    ) -> tuple[WorkflowPlan, PlannerOutput, int]:
         started = time.perf_counter()
         requires_generation = router_result.task_type == "generate"
         steps = []
@@ -46,5 +48,5 @@ class PlannerAgent:
             steps=output.steps,
             notes=output.notes,
         )
-        latency_ms = int((time.perf_counter() - started) * 1000)
+        latency_ms = round((time.perf_counter() - started) * 1000, 2)
         return plan, output, latency_ms

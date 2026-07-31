@@ -547,6 +547,45 @@ Complete
 - metrics storage
 - comparison tooling
 
+### Future Evaluation Inputs
+
+The Evaluator should consume structured artifacts only.
+
+Inputs include:
+
+- normalized reviewer findings
+- normalized security findings
+- structured pytest report
+- deterministic rule evaluation
+- candidate code
+
+Avoid evaluating free-form console output whenever structured data is available.
+
+### Evaluation Pipeline Improvements
+
+Refine the evaluator's inputs and reasoning.
+
+- Replace coarse inspection statuses (e.g. `SecurityAuditOutput.status = "FAILED"`) with a normalized list of findings that the evaluator verifies against the current candidate.
+- Track each reviewer/security finding individually as `resolved` or `unresolved` instead of treating the original inspection result as the current code status.
+- Ensure evaluator explanations distinguish between:
+  - historical issues identified in the original code,
+  - issues resolved by the refactoring,
+  - issues still remaining in the candidate.
+
+### Test Infrastructure Improvements
+
+Improve the deterministic test runner by consuming structured pytest output instead of parsing console text.
+
+- Replace stdout parsing with `pytest-json-report`.
+- Populate `TestRunResult` from the JSON report rather than regular expressions.
+- Capture additional execution metadata, including:
+  - total tests
+  - passed / failed / skipped / xfailed / xpassed
+  - individual test results
+  - failure messages and tracebacks
+  - execution duration
+- Make the JSON report the canonical input for the Evaluator rather than pytest stdout.
+
 ---
 
 ## Milestone 5

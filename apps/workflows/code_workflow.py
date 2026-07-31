@@ -10,6 +10,8 @@ from apps.agents.evaluator_agent import EvaluatorAgent
 from apps.agents.inspection_agent import InspectionAgent
 from apps.agents.planner_agent import PlannerAgent
 from apps.agents.test_generator_agent import TestGeneratorAgent
+from apps.core.settings import get_workflow_settings
+from apps.core.workflow_config import WorkflowConfig
 from apps.evals.execution_eval import calculate_execution_score
 from apps.evals.rule_based import calculate_rule_score
 from apps.schemas.agent_outputs import (
@@ -51,6 +53,7 @@ class CodeWorkflow:
         evaluator: EvaluatorAgent | None = None,
         # test_runner: TestRunner,
         # artifact_manager: ArtifactManager,
+        config: WorkflowConfig | None = None,
     ) -> None:
         self.planner = planner or PlannerAgent()
         self.code_writer = code_writer or CodeWriterAgent()
@@ -59,6 +62,7 @@ class CodeWorkflow:
         self.evaluator = evaluator or EvaluatorAgent()
         # self.test_runner = test_runner
         # self.artifact_manager = artifact_manager
+        self._workflow_config = config or WorkflowConfig()
 
     async def run(self, request: ReviewRequest) -> ReviewResponse:
         workflow_run_id = uuid4()
@@ -403,5 +407,11 @@ class CodeWorkflow:
 
 
 async def run_code_workflow(request: ReviewRequest) -> ReviewResponse:
-    workflow = CodeWorkflow()
+    workflow_settings = get_workflow_settings()
+    workflow_config = WorkflowConfig(
+        max_rounds=workflow_settings.workflow_max_rounds,
+        force_retry_rounds=workflow_settings.workflow_force_retry_rounds,
+        always_retry=workflow_settings.workflow_always_retry,
+    )
+    workflow = CodeWorkflow(config=workflow_config)
     return await workflow.run(request)

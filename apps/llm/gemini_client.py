@@ -1,13 +1,13 @@
 """Shared Gemini client helpers."""
 
-#import asyncio
+# import asyncio
 import json
 import logging
 from typing import TypeVar
 
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from apps.core.settings import get_auth_settings
 
@@ -75,9 +75,10 @@ async def generate_structured(
     raw = response.text or "{}"
     try:
         return response_schema.model_validate_json(raw)
-    except Exception:
-        logger.warning("Structured model parsing failed; raw response=%s", raw)
+    except ValidationError:
+        logger.exception(f"Structured model parsing failed; raw response={raw}")
         return response_schema.model_validate(json.loads(raw))
+
 
 async def close_gemini_client() -> None:
     """Close the async Gemini client during FastAPI shutdown."""

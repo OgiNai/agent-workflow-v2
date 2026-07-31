@@ -1,6 +1,7 @@
 """Deterministic pytest runner tool."""
 
 import asyncio
+import re
 import sys
 import tempfile
 import time
@@ -47,7 +48,7 @@ async def run_pytest_for_code(
                     process.communicate(),
                     timeout=timeout_seconds,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 process.kill()
                 stdout_bytes, stderr_bytes = await process.communicate()
 
@@ -74,7 +75,7 @@ async def run_pytest_for_code(
                 stderr=exc.stderr or "",
             )
         """
-        except Exception as exc:
+        except OSError as exc:
             return TestRunResult(
                 status="error",
                 duration_ms=int((time.perf_counter() - started) * 1000),
@@ -83,10 +84,21 @@ async def run_pytest_for_code(
 
     exit_code = process.returncode
     status: Literal["passed", "failed"] = "passed" if exit_code == 0 else "failed"
+    stdout = stdout_bytes.decode(errors="replace")
+    stderr = stderr_bytes.decode(errors="replace")
+    passed = failed = 0
+    if match := re.search(r"(\d+)\s+passed", stdout):
+        passed = int(match.group(1))
+    if match := re.search(r"(\d+)\s+failed", stdout):
+        failed = int(match.group(1))
+    tests_total = passed + failed if (passed or failed) else None
     return TestRunResult(
         status=status,
         duration_ms=int((time.perf_counter() - started) * 1000),
         exit_code=exit_code,
-        stdout=stdout_bytes.decode(errors="replace"),
-        stderr=stderr_bytes.decode(errors="replace"),
+        stdout=stdout,
+        stderr=stderr,
+        tests_total=tests_total,
+        tests_passed=passed,
+        tests_failed=failed,
     )

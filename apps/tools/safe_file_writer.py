@@ -6,12 +6,14 @@ from uuid import UUID
 
 from apps.core.constants import ALLOWED_WRITE_EXTENSIONS
 
-#from apps.core.settings import get_auth_settings
+# from apps.core.settings import get_auth_settings
 from apps.schemas.tools import ToolResult
 from apps.tools.file_path_helpers import resolve_artifact_path
 
 
-def write_artifact(workflow_run_id: UUID | str, relative_path: str, content: str) -> ToolResult:
+def write_artifact(
+    workflow_run_id: UUID | str, relative_path: str, content: str
+) -> ToolResult:
     """Write an artifact into workspace/review_runs/{workflow_run_id}/ only."""
     started = time.perf_counter()
     try:
@@ -32,7 +34,7 @@ def write_artifact(workflow_run_id: UUID | str, relative_path: str, content: str
                 "content_hash": digest,
             },
         )
-    except Exception as exc:
+    except OSError as exc:
         return ToolResult(
             tool_name="safe_file_writer",
             status="failed",

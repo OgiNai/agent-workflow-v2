@@ -2,10 +2,10 @@
 
 import time
 
-#from pathlib import Path
+# from pathlib import Path
 from apps.core.constants import ALLOWED_READ_EXTENSIONS, MAX_FILE_SIZE_BYTES
 
-#from apps.core.settings import get_auth_settings
+# from apps.core.settings import get_auth_settings
 from apps.schemas.tools import ToolResult
 from apps.tools.file_path_helpers import resolve_project_file_path
 
@@ -30,7 +30,7 @@ def read_project_file(file_path: str) -> ToolResult:
             latency_ms=int((time.perf_counter() - started) * 1000),
             metadata={"path": str(target), "size_bytes": size_bytes},
         )
-    except Exception as exc:
+    except OSError as exc:
         return ToolResult(
             tool_name="safe_file_reader",
             status="failed",

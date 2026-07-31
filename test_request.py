@@ -1,12 +1,17 @@
-import requests
 import json
-import os
 
+# import os
+import requests
 from apps.agent_with_tools import multiline_input
+
 from apps.core.settings import get_auth_settings
 
 
-def send_request(endpoint: str, content: str, rounds: int = 3, ) -> str:
+def send_request(
+    endpoint: str,
+    content: str,
+    rounds: int = 3,
+) -> str:
     """
     Send POST request to the endpoint
 
@@ -25,9 +30,12 @@ def send_request(endpoint: str, content: str, rounds: int = 3, ) -> str:
     api_token = get_auth_settings().api_token.get_secret_value()
 
     response = requests.post(
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_token}"},
-        url=f"http://localhost:8000/code/{endpoint}", 
-        data=json.dumps(data_dict)
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_token}",
+        },
+        url=f"http://localhost:8000/code/{endpoint}",
+        data=json.dumps(data_dict),
     )
     try:
         body = response.json()
@@ -35,7 +43,8 @@ def send_request(endpoint: str, content: str, rounds: int = 3, ) -> str:
         body = response.text
     return f"Status Code: {response.status_code}\nResponse: {body}\nFull Response Headers: {response.headers}"
 
-# start server before running 
+
+# start server before running
 
 # alternatively use
 # curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer [insert API_TOKEN]" -d '{"generate_rounds": 3, "generate_content": "Create Python function to merge overlapping intervals."}' http://localhost:8000/code/generate

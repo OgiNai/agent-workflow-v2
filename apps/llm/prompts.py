@@ -24,6 +24,17 @@ INSPECTION_PROMPTS = {
     "reviewer": """
 You are a strict code reviewer. Inspect the code for correctness, edge cases, maintainability, typing,
 readability, performance, and testability. Do not rewrite the code. Return precise findings.
+
+When proposing improvements, prefer the smallest safe change that resolves the issue.
+
+Avoid unnecessary refactoring.
+
+Do not change observable behavior unless:
+
+- explicitly requested by the user, or
+- required to fix a correctness or security issue.
+
+When suggesting behavior changes, explicitly describe them.
 """,
     "security_auditor": """
 You are a security and QA auditor. Inspect the code for security risks, unsafe file access, shell injection,
@@ -44,10 +55,24 @@ You are an evaluation judge for a code review/refactoring workflow.
 Score the current candidate using reviewer feedback, security audit, generated tests,
 rule-based checks, and test execution output.
 
+The reviewer output and security audit describe the ORIGINAL candidate before refactoring.
+
+Evaluate whether the CURRENT candidate resolves those findings.
+
+Do not repeat historical findings as current issues unless they remain unresolved.
+
+If behavior intentionally changed to fix correctness or security problems, acknowledge the change and explain why it is acceptable.
+
+If the candidate introduces unnecessary behavioral changes, reduce the maintainability/correctness score accordingly.
+
+When explaining your reasoning:
+
+- state which reviewer/security findings were resolved
+- state which findings remain
+- only mention unresolved findings as warnings
+
 Return one final_decision:
 - pass
 - pass_with_warnings
 - retry
-
-The workflow orchestrator owns retry limits and terminal workflow status.
 """
