@@ -223,11 +223,19 @@ class CodeWorkflow:
                         evaluation=evaluation,
                     )
 
-                if evaluation.final_decision in {"pass", "pass_with_warnings"}:
+                # Use workflow_decision in debug mode
+                workflow_decision = evaluation.final_decision
+                if self._workflow_config.always_retry or (
+                    self._workflow_config.force_retry_rounds > 0
+                    and round_number <= self._workflow_config.force_retry_rounds
+                ):
+                    workflow_decision = "retry"
+
+                if workflow_decision in {"pass", "pass_with_warnings"}:
                     final_summary = "Workflow completed successfully."
                     break
 
-                if not should_retry(evaluation, round_number, plan.max_rounds):
+                if not should_retry(workflow_decision, round_number, plan.max_rounds):
                     final_summary = "Workflow completed without passing evaluation."
                     break
 
@@ -240,10 +248,10 @@ class CodeWorkflow:
                         detail="Retry routes back to Reviewer with latest candidate code.",
                     )
                 )
-            final_decision = self._resolve_final_decision(final_evaluation)
+            # final_decision = self._resolve_final_decision(final_evaluation)
             status = (
                 "completed"
-                if final_decision in {"pass", "pass_with_warnings"}
+                if workflow_decision in {"pass", "pass_with_warnings"}
                 else "completed_with_warnings"
             )
             return ReviewResponse(
@@ -251,7 +259,7 @@ class CodeWorkflow:
                 status=status,
                 task_type=router_result.task_type,
                 source_type=router_result.source_type,
-                final_decision=final_decision,
+                final_decision=workflow_decision,
                 summary=final_summary,
                 final_code=final_code,
                 evaluation=final_evaluation,
