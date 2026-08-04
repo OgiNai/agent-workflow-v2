@@ -37,8 +37,8 @@ class AuthSettings(BaseSettings):
 class WorkflowSettings(BaseSettings):
     workflow_max_rounds: int = 3
     # Development only
-    workflow_force_retry_rounds: int = 1
-    workflow_always_retry: bool = False
+    workflow_force_retry_rounds: int = 0
+    workflow_always_retry: bool = True
 
     model_config = shared_config
 

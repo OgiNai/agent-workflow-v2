@@ -18,7 +18,7 @@ class RouterResult(BaseModel):
     code_available: bool
     code: str | None = None
     source_path: str | None = None
-    #original_content: str | None = None
+    # original_content: str | None = None
 
 
 class WorkflowPlan(BaseModel):
@@ -47,7 +47,7 @@ class WorkflowStepTrace(BaseModel):
     step_name: str
     step_type: Literal["agent", "tool", "workflow", "evaluation"]
     status: Literal["success", "failed", "skipped"]
-    latency_ms: int | None = None
+    latency_ms: float | None = None
     round_number: int | None = None
     detail: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)

@@ -1,0 +1,74 @@
+2026-08-04 12:02:44,675-INFO-google_genai.models::models|8635:: AFC is enabled with max remote calls: 10.
+2026-08-04 12:02:44,700-DEBUG-httpcore.connection::_trace|87:: connect_tcp.started host='generativelanguage.googleapis.com' port=443 local_address=None timeout=None socket_options=None
+2026-08-04 12:02:54,717-DEBUG-httpcore.connection::_trace|87:: connect_tcp.failed exception=ConnectError(gaierror(-3, 'Temporary failure in name resolution'))
+2026-08-04 12:02:54,720-INFO-google_genai._api_client::before_sleep|64:: Retrying google.genai._api_client.BaseApiClient._async_request_once in 5.93 seconds as it raised ConnectError: [Errno -3] Temporary failure in name resolution.
+2026-08-04 12:03:00,654-DEBUG-httpcore.connection::_trace|87:: connect_tcp.started host='generativelanguage.googleapis.com' port=443 local_address=None timeout=None socket_options=None
+2026-08-04 12:03:00,682-DEBUG-httpcore.connection::_trace|87:: connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x7fd15bbc5150>
+2026-08-04 12:03:00,684-DEBUG-httpcore.connection::_trace|87:: start_tls.started ssl_context=<ssl.SSLContext object at 0x7fd15bc83800> server_hostname='generativelanguage.googleapis.com' timeout=None
+2026-08-04 12:03:00,784-DEBUG-httpcore.connection::_trace|87:: start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x7fd15bad4050>
+2026-08-04 12:03:00,786-DEBUG-httpcore.http11::_trace|87:: send_request_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:00,791-DEBUG-httpcore.http11::_trace|87:: send_request_headers.complete
+2026-08-04 12:03:00,793-DEBUG-httpcore.http11::_trace|87:: send_request_body.started request=<Request [b'POST']>
+2026-08-04 12:03:00,797-DEBUG-httpcore.http11::_trace|87:: send_request_body.complete
+2026-08-04 12:03:00,798-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:06,341-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'X-Gemini-Service-Tier', b'standard'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Tue, 04 Aug 2026 09:03:07 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=5475'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 12:03:06,345-INFO-httpx::_client|1740:: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 200 OK"
+2026-08-04 12:03:06,346-DEBUG-httpcore.http11::_trace|87:: receive_response_body.started request=<Request [b'POST']>
+2026-08-04 12:03:06,351-DEBUG-httpcore.http11::_trace|87:: receive_response_body.complete
+2026-08-04 12:03:06,353-DEBUG-httpcore.http11::_trace|87:: response_closed.started
+2026-08-04 12:03:06,354-DEBUG-httpcore.http11::_trace|87:: response_closed.complete
+2026-08-04 12:03:06,359-INFO-apps.agents.base_agent::base_agent|41:: agent_call_completed
+2026-08-04 12:03:06,360-INFO-google_genai.models::models|8635:: AFC is enabled with max remote calls: 10.
+2026-08-04 12:03:06,371-DEBUG-httpcore.http11::_trace|87:: send_request_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:06,373-DEBUG-httpcore.http11::_trace|87:: send_request_headers.complete
+2026-08-04 12:03:06,373-DEBUG-httpcore.http11::_trace|87:: send_request_body.started request=<Request [b'POST']>
+2026-08-04 12:03:06,375-DEBUG-httpcore.http11::_trace|87:: send_request_body.complete
+2026-08-04 12:03:06,377-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:08,182-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'X-Gemini-Service-Tier', b'standard'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Tue, 04 Aug 2026 09:03:09 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=1754'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 12:03:08,188-INFO-httpx::_client|1740:: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 200 OK"
+2026-08-04 12:03:08,189-DEBUG-httpcore.http11::_trace|87:: receive_response_body.started request=<Request [b'POST']>
+2026-08-04 12:03:08,192-DEBUG-httpcore.http11::_trace|87:: receive_response_body.complete
+2026-08-04 12:03:08,194-DEBUG-httpcore.http11::_trace|87:: response_closed.started
+2026-08-04 12:03:08,195-DEBUG-httpcore.http11::_trace|87:: response_closed.complete
+2026-08-04 12:03:08,199-INFO-apps.agents.base_agent::base_agent|41:: agent_call_completed
+2026-08-04 12:03:08,203-INFO-google_genai.models::models|8635:: AFC is enabled with max remote calls: 10.
+2026-08-04 12:03:08,212-DEBUG-httpcore.http11::_trace|87:: send_request_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:08,214-DEBUG-httpcore.http11::_trace|87:: send_request_headers.complete
+2026-08-04 12:03:08,215-DEBUG-httpcore.http11::_trace|87:: send_request_body.started request=<Request [b'POST']>
+2026-08-04 12:03:08,218-DEBUG-httpcore.http11::_trace|87:: send_request_body.complete
+2026-08-04 12:03:08,219-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:12,073-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'X-Gemini-Service-Tier', b'standard'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Tue, 04 Aug 2026 09:03:12 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=3794'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 12:03:12,074-INFO-httpx::_client|1740:: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 200 OK"
+2026-08-04 12:03:12,076-DEBUG-httpcore.http11::_trace|87:: receive_response_body.started request=<Request [b'POST']>
+2026-08-04 12:03:12,078-DEBUG-httpcore.http11::_trace|87:: receive_response_body.complete
+2026-08-04 12:03:12,082-DEBUG-httpcore.http11::_trace|87:: response_closed.started
+2026-08-04 12:03:12,083-DEBUG-httpcore.http11::_trace|87:: response_closed.complete
+2026-08-04 12:03:12,086-INFO-apps.agents.base_agent::base_agent|41:: agent_call_completed
+2026-08-04 12:03:12,088-INFO-google_genai.models::models|8635:: AFC is enabled with max remote calls: 10.
+2026-08-04 12:03:12,095-DEBUG-httpcore.http11::_trace|87:: send_request_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:12,103-DEBUG-httpcore.http11::_trace|87:: send_request_headers.complete
+2026-08-04 12:03:12,104-DEBUG-httpcore.http11::_trace|87:: send_request_body.started request=<Request [b'POST']>
+2026-08-04 12:03:12,106-DEBUG-httpcore.http11::_trace|87:: send_request_body.complete
+2026-08-04 12:03:12,107-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:15,039-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'X-Gemini-Service-Tier', b'standard'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Tue, 04 Aug 2026 09:03:15 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=2812'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 12:03:15,041-INFO-httpx::_client|1740:: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 200 OK"
+2026-08-04 12:03:15,047-DEBUG-httpcore.http11::_trace|87:: receive_response_body.started request=<Request [b'POST']>
+2026-08-04 12:03:15,051-DEBUG-httpcore.http11::_trace|87:: receive_response_body.complete
+2026-08-04 12:03:15,053-DEBUG-httpcore.http11::_trace|87:: response_closed.started
+2026-08-04 12:03:15,054-DEBUG-httpcore.http11::_trace|87:: response_closed.complete
+2026-08-04 12:03:15,058-INFO-apps.agents.base_agent::base_agent|41:: agent_call_completed
+2026-08-04 12:03:16,516-INFO-google_genai.models::models|8635:: AFC is enabled with max remote calls: 10.
+2026-08-04 12:03:16,527-DEBUG-httpcore.http11::_trace|87:: send_request_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:16,529-DEBUG-httpcore.http11::_trace|87:: send_request_headers.complete
+2026-08-04 12:03:16,530-DEBUG-httpcore.http11::_trace|87:: send_request_body.started request=<Request [b'POST']>
+2026-08-04 12:03:16,532-DEBUG-httpcore.http11::_trace|87:: send_request_body.complete
+2026-08-04 12:03:16,533-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 12:03:18,931-DEBUG-httpcore.http11::_trace|87:: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'X-Gemini-Service-Tier', b'standard'), (b'Content-Type', b'application/json; charset=UTF-8'), (b'Vary', b'Origin'), (b'Vary', b'X-Origin'), (b'Vary', b'Referer'), (b'Content-Encoding', b'gzip'), (b'Date', b'Tue, 04 Aug 2026 09:03:19 GMT'), (b'Server', b'scaffolding on HTTPServer2'), (b'X-XSS-Protection', b'0'), (b'X-Frame-Options', b'SAMEORIGIN'), (b'X-Content-Type-Options', b'nosniff'), (b'Server-Timing', b'gfet4t7; dur=2351'), (b'Alt-Svc', b'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 12:03:18,932-INFO-httpx::_client|1740:: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent "HTTP/1.1 200 OK"
+2026-08-04 12:03:18,932-DEBUG-httpcore.http11::_trace|87:: receive_response_body.started request=<Request [b'POST']>
+2026-08-04 12:03:18,934-DEBUG-httpcore.http11::_trace|87:: receive_response_body.complete
+2026-08-04 12:03:18,936-DEBUG-httpcore.http11::_trace|87:: response_closed.started
+2026-08-04 12:03:18,937-DEBUG-httpcore.http11::_trace|87:: response_closed.complete
+2026-08-04 12:03:18,943-INFO-apps.agents.base_agent::base_agent|41:: agent_call_completed
+2026-08-04 12:13:42,906-DEBUG-httpcore.connection::_trace|87:: close.started
+2026-08-04 12:13:42,913-DEBUG-httpcore.connection::_trace|87:: close.complete

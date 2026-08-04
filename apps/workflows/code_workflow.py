@@ -28,7 +28,8 @@ from apps.schemas.workflow import (  # , ArtifactInfo
 from apps.tools.test_runner import TestRunResult, run_pytest_for_code
 from apps.workflows.artifact_manager import save_artifact
 from apps.workflows.input_router import route_input
-from apps.workflows.retry_policy import should_retry
+
+# from apps.workflows.retry_policy import should_retry
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,8 @@ class CodeWorkflow:
         final_evaluation: EvaluatorOutput | None = None
         final_code: str | None = None
         final_summary = "Workflow did not complete."
+        passing_decisions = {"pass", "pass_with_warnings"}
+        retry_override_active = False
 
         try:
             router_result = route_input(request)
@@ -103,7 +106,7 @@ class CodeWorkflow:
             )
             previous_evaluation: EvaluatorOutput | None = None
 
-            for round_number in range(1, plan.max_rounds + 1):
+            for round_number in range(1, self._workflow_config.max_rounds + 1):
                 rounds_executed = round_number
                 review, review_latency = await self.inspector.run(
                     mode="reviewer",
@@ -223,21 +226,46 @@ class CodeWorkflow:
                         evaluation=evaluation,
                     )
 
-                # Use workflow_decision in debug mode
-                workflow_decision = evaluation.final_decision
-                if self._workflow_config.always_retry or (
+                # flag to indicate if in debug mode
+                retry_override_active = self._workflow_config.always_retry or (
                     self._workflow_config.force_retry_rounds > 0
-                    and round_number <= self._workflow_config.force_retry_rounds
-                ):
+                    and round_number < self._workflow_config.force_retry_rounds
+                )
+
+                evaluator_decision = evaluation.final_decision
+                # Use workflow_decision to merge normal and debug workflows
+                workflow_decision = evaluator_decision
+
+                if retry_override_active:
                     workflow_decision = "retry"
 
-                if workflow_decision in {"pass", "pass_with_warnings"}:
-                    final_summary = "Workflow completed successfully."
+                    context.traces.append(
+                        WorkflowStepTrace(
+                            step_name="debug_retry_override",
+                            step_type="workflow",
+                            status="success",
+                            round_number=round_number,
+                            detail="Retry forced by workflow configuration.",
+                            metadata={
+                                "evaluator_decision": evaluator_decision,
+                                "workflow_decision": workflow_decision,
+                                "override_reason": (
+                                    "always_retry"
+                                    if self._workflow_config.always_retry
+                                    else "force_retry_rounds"
+                                ),
+                            },
+                        )
+                    )
+
+                # Evaluator passed the code
+                if workflow_decision in passing_decisions:
+                    # final_summary = "Workflow completed successfully."
                     break
 
-                if not should_retry(workflow_decision, round_number, plan.max_rounds):
-                    final_summary = "Workflow completed without passing evaluation."
-                    break
+                # if not should_retry(workflow_decision, round_number, plan.max_rounds):
+                # final_summary = "Workflow completed without passing evaluation."
+                # break
 
                 context.traces.append(
                     WorkflowStepTrace(
@@ -248,18 +276,38 @@ class CodeWorkflow:
                         detail="Retry routes back to Reviewer with latest candidate code.",
                     )
                 )
+
             # final_decision = self._resolve_final_decision(final_evaluation)
+            final_decision = (
+                final_evaluation.final_decision
+                if final_evaluation.final_decision in passing_decisions
+                else "unresolved"
+            )
             status = (
                 "completed"
-                if workflow_decision in {"pass", "pass_with_warnings"}
+                if final_decision in passing_decisions
                 else "completed_with_warnings"
             )
+
+            if final_decision in passing_decisions:
+                final_summary = "Workflow completed successfully."
+            else:
+                final_summary = "Workflow completed without passing evaluation."
+
+            if retry_override_active:
+                test_for = (
+                    "always retry"
+                    if self._workflow_config.always_retry
+                    else "force rounds"
+                )
+                final_summary += f" Workflow ran in debug mode, tested for {test_for}."
+
             return ReviewResponse(
                 workflow_run_id=workflow_run_id,
                 status=status,
                 task_type=router_result.task_type,
                 source_type=router_result.source_type,
-                final_decision=workflow_decision,
+                final_decision=final_decision,
                 summary=final_summary,
                 final_code=final_code,
                 evaluation=final_evaluation,
@@ -342,6 +390,7 @@ class CodeWorkflow:
             code=router_result.code, origin="user_input", round_number=0
         )
 
+    """
     @staticmethod
     def _resolve_final_decision(evaluation: EvaluatorOutput | None) -> str:
 
@@ -349,6 +398,7 @@ class CodeWorkflow:
             return evaluation.final_decision
 
         return "unresolved"
+    """
 
     @staticmethod
     def _trace_agent(
@@ -417,7 +467,11 @@ class CodeWorkflow:
 async def run_code_workflow(request: ReviewRequest) -> ReviewResponse:
     workflow_settings = get_workflow_settings()
     workflow_config = WorkflowConfig(
-        max_rounds=workflow_settings.workflow_max_rounds,
+        max_rounds=(
+            request.max_rounds
+            if request.max_rounds is not None
+            else workflow_settings.workflow_max_rounds
+        ),
         force_retry_rounds=workflow_settings.workflow_force_retry_rounds,
         always_retry=workflow_settings.workflow_always_retry,
     )
