@@ -599,6 +599,24 @@ Implement
 - branch analysis
 - commit review
 
+### Planner upgrade
+
+Replace the deterministic PlannerAgent with an LLM-powered planner.
+
+Goals:
+- Decide execution plan from user intent.
+- Produce structured PlannerOutput.
+- Determine whether generation is required.
+- Decide which workflow stages should execute.
+- Support future extensibility (documentation generation, linting, dependency updates, etc.).
+
+Requirements:
+- Preserve the existing PlannerOutput schema.
+- Planner must be deterministic through structured output.
+- Add prompt and evaluation tests.
+- Add observability for planner reasoning and latency.
+- Keep the deterministic planner available behind a feature flag for testing.
+
 ---
 
 ## Milestone 6
