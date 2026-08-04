@@ -1,213 +1,221 @@
-# Agentic Code Assistant
+# AI Code Review & Refactoring Platform
 
-A simple learning project for experimenting with agentic AI workflows in Python.
+> A production-oriented multi-agent AI workflow for automated code generation, code review, security auditing, refactoring, testing, evaluation, and continuous improvement.
 
-The project exposes a FastAPI server with two code-assistant workflows:
-
-1. **Code Review Agent** — reviews Python code and can use tools to read or save local project files.
-2. **Multi-Agent Code Generator** — uses a coder/auditor loop where one agent writes code and another agent audits it for bugs, security issues, and edge cases.
-
-The goal of this project is to practice building small agentic systems with API endpoints, tool calling, structured model responses, authentication, logging, and local testing.
+> **Status:** Active development (Portfolio Project)
 
 ---
 
-## Features
+## Overview
 
-* FastAPI-based backend API
-* Bearer-token authentication
-* Console-based test client
-* Single-agent code review workflow
-* Tool-enabled agent with local file read/write tools
-* Multi-agent coder/auditor workflow
-* Structured audit output using Pydantic schemas
-* Environment-based configuration with `.env`
-* Lazy imports and lazy client initialization to keep server startup lightweight
+This project is designed to demonstrate practical AI Engineering skills rather than simply calling an LLM API.
+
+It implements a production-style multi-agent workflow where specialized AI agents collaborate to review, improve, validate, and evaluate software code.
+
+The focus is on building scalable orchestration, observability, evaluation, and engineering practices similar to those used in real-world AI systems.
 
 ---
 
-## Project Structure
+## Goals
+
+- Build a production-quality AI workflow
+- Use modern AI engineering practices
+- Demonstrate system design and software architecture
+- Showcase multi-agent orchestration
+- Follow clean architecture and engineering best practices
+- Create a portfolio project suitable for AI Engineer interviews
+
+---
+
+## Current Workflow
 
 ```text
-apps/
-├── main.py                  # FastAPI app entry point
-├── router.py                # API router registration
-├── code_endpoints.py        # /code/review and /code/generate endpoints
-├── agent_with_tools.py      # Single code-review agent with tools
-├── multi_agent_system.py    # Coder/auditor multi-agent workflow
-├── test_request.py          # Console client for testing API requests
-├── config.py                # Logging configuration
-└── .env                     # Local environment variables
+                User Request
+                     │
+                     ▼
+              Input Router
+                     │
+                     ▼
+                 Planner
+                     │
+      ┌──────────────┴──────────────┐
+      │                             │
+      │ Feature Request             │ Code Review
+      │                             │
+      ▼                             │
+CodeWriter (Generate)               │
+      └──────────────┬──────────────┘
+                     ▼
+              Reviewer Agent
+                     ▼
+          Security Auditor
+                     ▼
+     CodeWriter (Refactor/Repair)
+                     ▼
+           Test Generator
+                     ▼
+             Test Runner
+                     ▼
+             Evaluator
+                     │
+          PASS / FAIL / RETRY
+                     │
+        RETRY returns to Reviewer
 ```
 
 ---
 
-## Workflows
+## Current Features
 
-### 1. Code Review Agent
-
-The review workflow accepts Python code or a file-related instruction and sends it to a code-review agent.
-
-The agent can use local tools such as:
-
-* `read_local_file`
-* `save_local_file`
-
-This allows the agent to inspect files inside the project directory and optionally save refactored output.
-
-Endpoint:
-
-```text
-POST /code/review
-```
-
-Example payload:
-
-```json
-{
-  "review_content": "def div(a: int, b: int):\n    return a / b"
-}
-```
+- Multi-agent workflow orchestration
+- Planner-driven execution
+- AI code generation
+- AI code review
+- Security auditing
+- Automated code refactoring
+- AI-generated unit tests
+- Automatic test execution
+- LLM-based evaluation
+- Rule-based evaluation
+- Execution-based evaluation
+- Structured workflow tracing
+- Artifact generation
+- Configurable retry loop
+- Debug retry mode
+- FastAPI REST API
+- Docker-ready project structure
 
 ---
 
-### 2. Multi-Agent Code Generator
+## Planned Features
 
-The generation workflow uses two agent roles:
-
-* **Coder** — writes Python code based on the user request.
-* **Auditor** — reviews the generated code for bugs, edge cases, security issues, and quality concerns.
-
-The agents communicate through a shared message ledger. The loop continues until the auditor passes the code or the maximum number of rounds is reached.
-
-Endpoint:
-
-```text
-POST /code/generate
-```
-
-Example payload:
-
-```json
-{
-  "generate_rounds": 3,
-  "generate_content": "Create a Python function to merge overlapping intervals."
-}
-```
+- PostgreSQL persistence (Neon)
+- User feedback collection
+- Full observability
+- Workflow analytics
+- Human approval checkpoints
+- GitHub integration
+- Cloud Run deployment
+- Azure deployment
+- Streamlit dashboard
+- LLM-powered Planner
+- Agent memory
+- Parallel agent execution
+- Automatic prompt evaluation
+- Benchmark datasets
+- CI/CD with GitHub Actions
 
 ---
 
-## Requirements
+## Architecture
 
-* Python 3.11+
-* FastAPI
-* Uvicorn
-* Requests
-* Pydantic
-* python-dotenv
-* Google GenAI SDK
-* uv package manager
+The project follows a modular architecture with clear separation of responsibilities.
 
----
+### AI Agents
 
-## Environment Variables
+- **Planner**
+  - Determines workflow execution strategy.
 
-Create a `.env` file in the project root or app directory:
+- **Reviewer**
+  - Reviews code quality and maintainability.
 
-```env
-API_TOKEN=your-local-api-token
-GEMINI_API_KEY=your-gemini-api-key
-PROJECT_PATH=/absolute/path/to/your/project
-```
+- **Security Auditor**
+  - Detects security vulnerabilities.
 
-### Variable descriptions
+- **CodeWriter**
+  - Generates new code or refactors existing code.
 
-| Variable         | Purpose                                                |
-| ---------------- | ------------------------------------------------------ |
-| `API_TOKEN`      | Bearer token used to protect the FastAPI endpoints     |
-| `GEMINI_API_KEY` | API key used by the Gemini model client                |
-| `PROJECT_PATH`   | Root directory allowed for local file read/write tools |
+- **Test Generator**
+  - Produces unit tests for generated/refactored code.
 
-Do not commit `.env` files or real API keys to version control.
+- **Evaluator**
+  - Combines execution results, review findings and LLM evaluation into a final decision.
+
+### Tools
+
+- Safe file reader
+- Safe file writer
+- Pytest execution
+- Artifact manager
 
 ---
 
-## Running the Server
+## Tech Stack
 
-From the `apps` directory:
+### AI
 
-```bash
-uv run uvicorn main:code_app --host 127.0.0.1 --port 8000 --log-level debug
-```
+- Google Gemini
+- Structured Outputs
+- Pydantic
 
-During development, you can also use reload mode:
+### Backend
 
-```bash
-uv run uvicorn main:code_app --reload --log-level debug
-```
+- Python
+- FastAPI
+- Uvicorn
 
-If reload mode behaves unexpectedly, run without `--reload` and restart the server manually.
+### Data
 
----
+- PostgreSQL (Neon) *(planned)*
 
-## Testing with the Console Client
+### Testing
 
-Start the server first, then run:
+- Pytest
+- pytest-json-report
 
-```bash
-uv run python test_request.py
-```
+### DevOps
 
-The script prompts for one of two modes:
-
-```text
-R = code review
-G = code generation
-```
-
-For code review, enter code and finish input with:
-
-```text
-END
-```
-
-Example:
-
-```text
-Enter 'R' for code review or 'G' for code generation: R
-def div(a: int, b: int):
-    return a / b
-END
-```
+- Docker
+- GitHub Actions *(planned)*
+- Google Cloud Run *(planned)*
+- Azure *(planned)*
 
 ---
 
-## API Authentication
+## Engineering Practices
 
-All `/code/...` endpoints require a Bearer token.
+This project intentionally emphasizes software engineering over prompt engineering.
 
-Example request:
+Implemented practices include:
 
-```bash
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_TOKEN" \
-  -d '{"review_content": "def div(a: int, b: int):\n    return a / b"}' \
-  http://localhost:8000/code/review
-```
+- Clean Architecture
+- Dependency Injection
+- Immutable configuration
+- Strong typing
+- Structured outputs
+- Modular agent design
+- Configuration management
+- Observability
+- Evaluation pipeline
+- Production-style orchestration
+- Separation of concerns
 
 ---
 
-## Learning Goals
+## Project Roadmap
 
-This project is intended to demonstrate practical understanding of:
+| Milestone | Status |
+|-----------|--------|
+| Workflow Backbone | ✅ Completed |
+| PostgreSQL Persistence | 🚧 Planned |
+| Observability | 🚧 Planned |
+| Human Feedback | 🚧 Planned |
+| LLM Planner | 🚧 Planned |
+| GitHub Integration | 🚧 Planned |
+| Cloud Deployment | 🚧 Planned |
+| Dashboard | 🚧 Planned |
 
-* FastAPI route design
-* API authentication
-* Environment-based configuration
-* Agent loops
-* Tool calling
-* Structured LLM output
-* Error handling
-* Logging
-* Local development/debugging workflow
-* Separating API startup from expensive runtime dependencies
+---
+
+## Why this project?
+
+This project focuses on the engineering challenges of building reliable AI systems:
+
+- orchestrating multiple specialized agents,
+- validating AI-generated outputs,
+- tracking workflow execution,
+- collecting evaluation metrics,
+- supporting iterative improvement,
+- preparing for production deployment.
+
+The objective is to demonstrate the skills expected from an AI Engineer working on real-world LLM applications rather than isolated prompt-based examples.
