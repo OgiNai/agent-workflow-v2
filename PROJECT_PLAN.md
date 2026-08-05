@@ -509,15 +509,96 @@ Includes
 
 ## Milestone 2
 
-Persistence.
+Milestone 2 implementation plan
 
-Implement
 
-- SQLAlchemy
-- Neon
-- repositories
-- workflow storage
-- feedback storage
+# Step 2.1 — Persistence foundation
+
+New files
+
+apps/database/
+├── __init__.py
+├── base.py
+├── session.py
+└── models.py
+
+Changes
+
+pyproject.toml
+apps/core/settings.py
+
+Deliverables:
+
+SQLAlchemy 2.x (async)
+asyncpg
+AsyncEngine
+AsyncSession
+DeclarativeBase
+configuration from WorkflowSettings
+ORM models
+database initialization
+
+No workflow changes yet.
+
+# Step 2.2 — Repository layer
+
+New
+
+apps/repositories/
+├── __init__.py
+├── workflow_repository.py
+├── agent_step_repository.py
+├── artifact_repository.py
+└── feedback_repository.py
+
+Deliverables:
+
+repository interfaces
+SQLAlchemy implementation
+CRUD operations
+
+Still no workflow modifications.
+
+# Step 2.3 — Integrate persistence
+
+Modify:
+
+code_workflow.py
+artifact_manager.py
+
+Deliverables:
+
+create WorkflowRun
+store AgentSteps
+store Artifacts
+update workflow status
+update summary
+save evaluation scores
+
+# Step 2.4 — Feedback API
+
+Modify:
+
+apps/api/feedback.py
+
+Deliverables:
+
+persist feedback
+validation
+repository integration
+
+# Step 2.5 — Database bootstrap
+
+Modify:
+
+main.py
+
+Deliverables:
+
+initialize engine
+create tables (development only)
+graceful shutdown
+health endpoint checks
 
 ---
 
