@@ -17,8 +17,8 @@ class WorkflowRepository:
     async def create(self, workflow: WorkflowRun) -> WorkflowRun:
         """Persist a new workflow run."""
         self._session.add(workflow)
-        await self._session.commit()
-        await self._session.refresh(workflow)
+        await self._session.flush()
+        # await self._session.refresh(workflow)
         return workflow
 
     async def get(self, workflow_id: uuid.UUID) -> WorkflowRun | None:
@@ -37,11 +37,11 @@ class WorkflowRepository:
         The supplied ORM instance is assumed to already be attached
         to the current session.
         """
-        await self._session.commit()
-        await self._session.refresh(workflow)
+        await self._session.flush()
+        # await self._session.refresh(workflow)
         return workflow
 
     async def delete(self, workflow: WorkflowRun) -> None:
         """Delete a workflow run."""
         await self._session.delete(workflow)
-        await self._session.commit()
+        await self._session.flush()

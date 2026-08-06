@@ -17,8 +17,8 @@ class FeedbackRepository:
     async def create(self, feedback: Feedback) -> Feedback:
         """Persist workflow feedback."""
         self._session.add(feedback)
-        await self._session.commit()
-        await self._session.refresh(feedback)
+        await self._session.flush()
+        # await self._session.refresh(feedback)
         return feedback
 
     async def get_by_workflow(

@@ -138,18 +138,14 @@ Reviewer (retry loop)
 
 Persistence is isolated behind repositories.
 
-Workflow
-
-↓
-
-Repositories
-
-↓
-
-SQLAlchemy
-
-↓
-
+Workflow (business logic)
+        ↓
+Unit of Work (transaction boundary)
+        ↓
+Repositories (data access)
+        ↓
+SQLAlchemy (ORM)
+        ↓
 PostgreSQL
 
 The workflow must remain persistence-agnostic.

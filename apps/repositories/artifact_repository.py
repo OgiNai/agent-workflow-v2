@@ -17,8 +17,8 @@ class ArtifactRepository:
     async def create(self, artifact: Artifact) -> Artifact:
         """Persist a workflow artifact."""
         self._session.add(artifact)
-        await self._session.commit()
-        await self._session.refresh(artifact)
+        await self._session.flush()
+        # await self._session.refresh(artifact)
         return artifact
 
     async def list_by_workflow(
