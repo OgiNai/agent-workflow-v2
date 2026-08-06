@@ -172,10 +172,11 @@ For each implementation step:
 4. Avoid duplicating work.
 5. Ask for explicit approval for any important design decisions before implementation.
 6. Explain only architectural decisions requiring approval.
-7. Generate complete files for every modified or new file.
+7. Generate the complete contents of every new or modified file directly in the chat.
 8. Clearly separate new files from modified files.
 9. Explain why each file changed.
-10. Wait until the changes have been integrated and tested before proceeding.
+10. The user is responsible for copying the generated files into the local repository, testing them, and committing the changes.
+11. Wait until the changes have been integrated and tested before proceeding.
 
 
 ---
@@ -247,12 +248,20 @@ AI_COLLABORATION.md
 pyproject.toml
 ```
 
+The GitHub repository is used **only for inspection**.
+
+Unless the user explicitly requests otherwise:
+
+* Never attempt to modify the GitHub repository.
+* Never attempt to create commits, branches, pull requests, or files through the GitHub integration.
+* Never use GitHub write operations.
+
 The GitHub repository is the authoritative source of the implementation.
 
-The AI assistant has standing permission to:
+The AI assistant has standing permission to perform read-only repository inspection:
 
 * Determine which repository files are relevant to the current task.
-* Fetch those files without requesting additional permission.
+* Fetch those files without requesting additional permission using the GitHub read interface.
 * Inspect their contents before proposing or generating code.
 * Use the existing implementation as the basis for all changes.
 
