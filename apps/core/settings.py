@@ -16,7 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # variables to BaseSettings' fields if names match. Extra security is added by SecretStr
 # which does not allow secrets to accidentally appear in logging or tracebacks
 
-ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 shared_config = SettingsConfigDict(
     env_file=ENV_FILE,
     env_file_encoding="utf-8",

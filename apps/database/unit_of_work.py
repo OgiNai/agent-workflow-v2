@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
 )
 
-from apps.database.session import async_session_factory
+from apps.database.session import get_session_factory
 from apps.repositories.agent_step_repository import AgentStepRepository
 from apps.repositories.artifact_repository import ArtifactRepository
 from apps.repositories.feedback_repository import FeedbackRepository
@@ -23,9 +23,11 @@ class UnitOfWork:
 
     def __init__(
         self,
-        session_factory: async_sessionmaker[AsyncSession] = async_session_factory,
+        session_factory: async_sessionmaker[AsyncSession] | None = None,
     ) -> None:
-        self._session_factory = session_factory
+        self._session_factory = (
+            session_factory if session_factory is not None else get_session_factory()
+        )
 
         self._session: AsyncSession | None = None
 
