@@ -314,6 +314,7 @@ class CodeWorkflow:
                             "security": security.model_dump(mode="json"),
                             "test_result": test_result.model_dump(mode="json"),
                             "rule_score": rule_score,
+                            "rule_notes": rule_notes,
                             "execution_score": execution_score,
                         },
                         runner=partial(
@@ -324,13 +325,12 @@ class CodeWorkflow:
                             security=security,
                             test_result=test_result,
                             rule_score=rule_score,
+                            rule_notes=rule_notes,
                             execution_score=execution_score,
                             round_number=round_number,
                         ),
                     )
                     step_order += 1
-
-                    evaluation.reasons.extend(rule_notes)
 
                     final_evaluation = evaluation
                     previous_evaluation = evaluation
