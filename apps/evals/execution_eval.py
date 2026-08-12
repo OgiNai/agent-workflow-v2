@@ -1,6 +1,6 @@
 """Execution-based evaluation."""
 
-from apps.tools.test_runner import TestRunResult
+from apps.schemas.tools import TestRunResult
 
 
 def calculate_execution_score(test_result: TestRunResult) -> float:

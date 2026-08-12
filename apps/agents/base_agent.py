@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from apps.llm.gemini_client import DEFAULT_MODEL, generate_structured
 
 logger = logging.getLogger(__name__)
-T = TypeVar("T", bound=BaseModel)
+ResponseSchemaT = TypeVar("ResponseSchemaT", bound=BaseModel)
 
 
 class BaseAgent:
@@ -25,8 +25,8 @@ class BaseAgent:
         *,
         system_instruction: str,
         payload: dict[str, Any],
-        response_schema: type[T],
-    ) -> tuple[T, int]:
+        response_schema: type[ResponseSchemaT],
+    ) -> tuple[ResponseSchemaT, int]:
         """Run a structured LLM call and return output plus latency."""
         started = time.perf_counter()
         prompt = json.dumps(payload, ensure_ascii=False, indent=2)

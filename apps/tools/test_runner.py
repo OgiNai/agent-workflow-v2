@@ -8,18 +8,7 @@ import time
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel
-
-
-class TestRunResult(BaseModel):
-    status: Literal["passed", "failed", "error", "timeout"]
-    tests_total: int | None = None
-    tests_passed: int | None = None
-    tests_failed: int | None = None
-    duration_ms: int
-    exit_code: int | None = None
-    stdout: str = ""
-    stderr: str = ""
+from apps.schemas.tools import TestRunResult
 
 
 async def run_pytest_for_code(
@@ -58,23 +47,7 @@ async def run_pytest_for_code(
                     stdout=stdout_bytes.decode(errors="replace"),
                     stderr=stderr_bytes.decode(errors="replace"),
                 )
-            """
-            completed = subprocess.run(
-                [sys.executable, "-m", "pytest", "test_solution.py", "-q"],
-                cwd=temp_path,
-                capture_output=True,
-                text=True,
-                timeout=timeout_seconds,
-                check=False,
-            )
-        except subprocess.TimeoutExpired as exc:
-            return TestRunResult(
-                status="timeout",
-                duration_ms=int((time.perf_counter() - started) * 1000),
-                stdout=exc.stdout or "",
-                stderr=exc.stderr or "",
-            )
-        """
+
         except OSError as exc:
             return TestRunResult(
                 status="error",

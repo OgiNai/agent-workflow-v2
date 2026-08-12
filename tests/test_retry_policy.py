@@ -1,20 +1,4 @@
-# from apps.schemas.agent_outputs import EvaluatorOutput
 from apps.workflows.retry_policy import should_retry
-
-"""
-def make_eval(decision: str):
-    return EvaluatorOutput(
-        final_decision=decision,
-        rule_score=0.5,
-        execution_score=0.5,
-        llm_score=0.5,
-        security_score=0.5,
-        maintainability_score=0.5,
-        correctness_score=0.5,
-        final_score=0.5,
-        reasons=[],
-    )
-"""
 
 
 def test_retry_allowed_before_max_rounds():

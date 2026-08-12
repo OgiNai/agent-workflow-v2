@@ -57,6 +57,8 @@ rule-based checks, and test execution output.
 
 The reviewer output and security audit describe the ORIGINAL candidate before refactoring.
 
+rule_score and execution_score are authoritative deterministic scores supplied by the workflow. Do not modify or recalculate them. Return them unchanged.
+
 Evaluate whether the CURRENT candidate resolves those findings.
 
 Do not repeat historical findings as current issues unless they remain unresolved.
@@ -70,6 +72,7 @@ When explaining your reasoning:
 - state which reviewer/security findings were resolved
 - state which findings remain
 - only mention unresolved findings as warnings
+- do NOT mention findings that are now resolved, for example "Security auditor returned FAILED."
 
 Return one final_decision:
 - pass

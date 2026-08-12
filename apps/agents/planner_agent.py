@@ -6,7 +6,6 @@ agent-like interface and records a planner step, so it can be switched to an LLM
 
 import time
 
-from apps.schemas.agent_outputs import PlannerOutput
 from apps.schemas.workflow import RouterResult, WorkflowPlan
 
 
@@ -15,7 +14,7 @@ class PlannerAgent:
 
     async def run(
         self, router_result: RouterResult, max_rounds: int
-    ) -> tuple[WorkflowPlan, PlannerOutput, int]:
+    ) -> tuple[WorkflowPlan, int]:
         started = time.perf_counter()
         requires_generation = router_result.task_type == "generate"
         steps = []
@@ -31,22 +30,14 @@ class PlannerAgent:
                 "evaluator",
             ]
         )
-        output = PlannerOutput(
+        plan = WorkflowPlan(
             task_type=router_result.task_type,
             requires_generation=requires_generation,
             requires_refactor=True,
             requires_tests=True,
+            max_rounds=max_rounds,
             steps=steps,
             notes=["Deterministic planner used for Milestone 1."],
         )
-        plan = WorkflowPlan(
-            task_type=output.task_type,
-            requires_generation=output.requires_generation,
-            requires_refactor=output.requires_refactor,
-            requires_tests=output.requires_tests,
-            max_rounds=max_rounds,
-            steps=output.steps,
-            notes=output.notes,
-        )
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
-        return plan, output, latency_ms
+        return plan, latency_ms

@@ -7,7 +7,7 @@ from apps.schemas.agent_outputs import (
     ReviewerOutput,
     SecurityAuditOutput,
 )
-from apps.tools.test_runner import TestRunResult
+from apps.schemas.tools import TestRunResult
 
 
 class EvaluatorAgent(BaseAgent):
@@ -24,7 +24,6 @@ class EvaluatorAgent(BaseAgent):
         rule_score: float,
         execution_score: float,
         round_number: int,
-        # max_rounds: int,
     ) -> tuple[EvaluatorOutput, int]:
         payload = {
             "instruction": instruction,
@@ -35,16 +34,25 @@ class EvaluatorAgent(BaseAgent):
             "rule_score": rule_score,
             "execution_score": execution_score,
             "round_number": round_number,
-            # "max_rounds": max_rounds,
             "decision_policy": {
                 "pass": "Use when no blocking correctness or security issues remain and required tests pass.",
                 "pass_with_warnings": "Use when no blocking issues remain, but non-critical recommendations still exist.",
                 "retry": "Use whenever blocking correctness, security, execution, or test issues remain.",
-                # "fail": "Use when severe issues remain or max rounds are exhausted.",
             },
         }
-        return await self._run_structured(
+
+        result, latency_ms = await self._run_structured(
             system_instruction=EVALUATOR_PROMPT,
             payload=payload,
             response_schema=EvaluatorOutput,
         )
+
+        # overwrite rule_score and execution_score to make sure LLM has not changed them
+        result = result.model_copy(
+            update={
+                "rule_score": rule_score,
+                "execution_score": execution_score,
+            }
+        )
+
+        return result, latency_ms
