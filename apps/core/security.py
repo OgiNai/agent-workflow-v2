@@ -1,6 +1,7 @@
 """FastAPI security dependencies."""
 
 import secrets
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -9,9 +10,14 @@ from apps.core.settings import get_auth_settings
 
 security = HTTPBearer()
 
+BearerCredentials = Annotated[
+    HTTPAuthorizationCredentials,
+    Depends(security),
+]
+
 
 async def verify_bearer_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: BearerCredentials,
 ) -> None:
     """Validate the configured API bearer token."""
     if credentials.scheme != "Bearer":

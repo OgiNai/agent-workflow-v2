@@ -1,7 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from apps.database.base import Base
@@ -101,6 +110,13 @@ class Artifact(Base):
 class Feedback(Base):
     __tablename__ = "feedback"
 
+    __table_args__ = (
+        UniqueConstraint(
+            "workflow_id",
+            name="uq_feedback_workflow_id",
+        ),
+    )
+
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,
         default=uuid.uuid4,
@@ -111,6 +127,7 @@ class Feedback(Base):
     )
 
     rating: Mapped[int | None] = mapped_column(Integer)
+    accepted: Mapped[bool] = mapped_column(Boolean, nullable=False)
     comments: Mapped[str | None] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

@@ -22,3 +22,13 @@ class ReviewResponse(BaseModel):
     artifacts: list[ArtifactInfo] = Field(default_factory=list)
     rounds_executed: int
     steps: list[WorkflowStepTrace] = Field(default_factory=list)
+
+
+class FeedbackResponse(BaseModel):
+    """Response for workflow feedback."""
+
+    id: UUID
+    workflow_run_id: UUID
+    rating: int
+    accepted: bool
+    comment: str | None = None

@@ -18,7 +18,6 @@ class FeedbackRepository:
         """Persist workflow feedback."""
         self._session.add(feedback)
         await self._session.flush()
-        # await self._session.refresh(feedback)
         return feedback
 
     async def get_by_workflow(
@@ -32,3 +31,8 @@ class FeedbackRepository:
 
         result = await self._session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def update(self, feedback: Feedback) -> Feedback:
+        """Persist changes made to existing workflow feedback."""
+        await self._session.flush()
+        return feedback
