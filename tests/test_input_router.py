@@ -1,6 +1,6 @@
 from apps.schemas.requests import ReviewRequest
 from apps.workflows.input_router import (
-    extract_markdown_code,
+    _extract_markdown_code,
     looks_like_python_code,
     route_input,
 )
@@ -8,7 +8,7 @@ from apps.workflows.input_router import (
 
 def test_extract_markdown_code():
     text = "Please review:\n```python\ndef add(a, b):\n    return a + b\n```"
-    assert extract_markdown_code(text).startswith("def add")
+    assert _extract_markdown_code(text).startswith("def add")
 
 
 def test_looks_like_python_code():
@@ -23,7 +23,7 @@ def test_auto_inline_code_routes_to_review_refactor():
     )
     result = route_input(request)
     assert result.task_type == "review_refactor"
-    #assert result.input_type == "inline_code"
+    # assert result.input_type == "inline_code"
     assert result.code_available is True
 
 
@@ -34,5 +34,5 @@ def test_auto_natural_language_routes_to_generate():
     )
     result = route_input(request)
     assert result.task_type == "generate"
-    #assert result.input_type == "natural_language"
+    # assert result.input_type == "natural_language"
     assert result.code_available is False

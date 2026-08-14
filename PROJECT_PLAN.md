@@ -589,16 +589,18 @@ repository integration
 
 # Step 2.5 — Database bootstrap
 
-Modify:
+The purpose of this step is to make the application responsible for initializing and validating its database connection during startup, while keeping the existing Alembic-based schema management.
 
-main.py
+Modify:
+- main.py
+- apps/database/session.py
+- apps/api/health.py
 
 Deliverables:
-
-initialize engine
-create tables (development only)
-graceful shutdown
-health endpoint checks
+- Initialize/validate the async database engine during application startup.
+- Verify Neon connectivity through the readiness endpoint.
+- Gracefully close the database engine during shutdown.
+- Keep database schema creation and evolution exclusively under Alembic.
 
 ---
 
