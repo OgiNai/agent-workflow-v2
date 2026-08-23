@@ -40,6 +40,9 @@ class SecurityAuditOutput(BaseModel):
 
 
 class TestGeneratorOutput(BaseModel):
+    # disable pytest for that class
+    __test__ = False
+
     tests: str = Field(
         description="Complete pytest test module code, without markdown fences."
     )

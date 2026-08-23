@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # easiest way to retrieve the API token is to load the environment variables
@@ -52,9 +52,18 @@ class TelemetrySettings(BaseSettings):
 
 
 class LLMSettings(BaseSettings):
-    initial_delay: float = 5.0
-    attempts: int = 3
-    temperature: float = 0.2
+    """Configuration for LLM generation.
+
+    Retry settings are used when the shared Gemini client is initialized.
+    Changing them after client initialization does not affect the existing
+    client.
+    """
+
+    initial_delay: float = Field(gt=0, default=5.0)
+    attempts: int = Field(ge=1, default=3)
+
+    model_name: str = Field(default="gemini-3.1-flash-lite", min_length=1)
+    temperature: float = Field(ge=0, le=2, default=0.2)
 
 
 # cache settings so they are only created once and then reused

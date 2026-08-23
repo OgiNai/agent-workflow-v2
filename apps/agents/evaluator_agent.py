@@ -47,7 +47,7 @@ class EvaluatorAgent(BaseAgent):
             payload=payload,
             response_schema=EvaluatorOutput,
             prompt_version=PROMPT_VERSIONS["evaluator"],
-            llm_settings=llm_settings if llm_settings is not None else LLMSettings(),
+            llm_settings=llm_settings if llm_settings else LLMSettings(),
         )
         calculated_llm_score = round(
             0.35 * result.security_score

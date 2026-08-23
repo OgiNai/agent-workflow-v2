@@ -27,5 +27,5 @@ class TestGeneratorAgent(BaseAgent):
             payload=payload,
             response_schema=TestGeneratorOutput,
             prompt_version=PROMPT_VERSIONS["test_generator"],
-            llm_settings=llm_settings if llm_settings is not None else LLMSettings(),
+            llm_settings=llm_settings if llm_settings else LLMSettings(),
         )

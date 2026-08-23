@@ -9,10 +9,14 @@ from dataclasses import dataclass
 from typing import TypeVar
 
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 from pydantic import BaseModel, ValidationError
 
 from apps.core.settings import LLMSettings, get_auth_settings
+from apps.llm.llm_exceptions import (
+    LLMGenerationError,
+    LLMResponseValidationError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +25,7 @@ _client: genai.Client | None = None
 DEFAULT_MODEL = "gemini-3.1-flash-lite"
 
 
+# use lightweight dataclass for internal runtime value object as it does not need validation
 @dataclass(frozen=True)
 class LLMUsage:
     """Provider-neutral token usage information."""
@@ -54,33 +59,21 @@ def _extract_usage(response: object) -> LLMUsage:
 
     if usage_metadata is None:
         return LLMUsage()
-
-    return LLMUsage(
-        prompt_tokens=getattr(
-            usage_metadata,
-            "prompt_token_count",
-            None,
-        ),
-        completion_tokens=getattr(
-            usage_metadata,
-            "candidates_token_count",
-            None,
-        ),
-        total_tokens=getattr(
-            usage_metadata,
-            "total_token_count",
-            None,
-        ),
-        cached_tokens=getattr(
-            usage_metadata,
-            "cached_content_token_count",
-            None,
-        ),
-    )
+    else:
+        return LLMUsage(
+            prompt_tokens=getattr(usage_metadata, "prompt_token_count", None),
+            completion_tokens=getattr(usage_metadata, "candidates_token_count", None),
+            total_tokens=getattr(usage_metadata, "total_token_count", None),
+            cached_tokens=getattr(usage_metadata, "cached_content_token_count", None),
+        )
 
 
 def _get_gemini_client(llm_settings: LLMSettings) -> genai.Client:
-    """Create the Gemini client lazily so FastAPI startup stays lightweight."""
+    """Create the Gemini client lazily so FastAPI startup stays lightweight.
+
+    Retry settings (initial_delay and attempts) are applied only when
+    the client is first initialized.
+    """
     global _client
     if _client is None:
         _client = genai.Client(
@@ -99,21 +92,26 @@ async def generate_text(
     *,
     system_instruction: str,
     prompt: str,
-    model_name: str = DEFAULT_MODEL,
-    llm_settings: LLMSettings | None = None,
+    llm_settings: LLMSettings,
 ) -> str:
     """Call Gemini and return raw text."""
 
     _set_llm_usage(None)
 
-    response = await _get_gemini_client(llm_settings).aio.models.generate_content(
-        model=model_name,
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            temperature=llm_settings.temperature,
-        ),
-        contents=prompt,
-    )
+    try:
+        response = await _get_gemini_client(llm_settings).aio.models.generate_content(
+            model=llm_settings.model_name,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=llm_settings.temperature,
+            ),
+            contents=prompt,
+        )
+    except errors.APIError as exc:
+        raise LLMGenerationError(
+            f"LLM generation failed for model '{llm_settings.model_name}'."
+        ) from exc
+
     _set_llm_usage(_extract_usage(response))
     return response.text or ""
 
@@ -123,37 +121,45 @@ async def generate_structured(
     system_instruction: str,
     prompt: str,
     response_schema: type[T],
-    model_name: str = DEFAULT_MODEL,
-    llm_settings: LLMSettings | None = None,
+    llm_settings: LLMSettings,
 ) -> T:
     """Call Gemini with a Pydantic response schema and parse the result."""
 
     _set_llm_usage(None)
 
-    response = await _get_gemini_client(llm_settings).aio.models.generate_content(
-        model=model_name,
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            temperature=llm_settings.temperature,
-            response_mime_type="application/json",
-            response_schema=response_schema,
-        ),
-        contents=prompt,
-    )
+    try:
+        response = await _get_gemini_client(llm_settings).aio.models.generate_content(
+            model=llm_settings.model_name,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=llm_settings.temperature,
+                response_mime_type="application/json",
+                response_schema=response_schema,
+            ),
+            contents=prompt,
+        )
+    except errors.APIError as exc:
+        raise LLMGenerationError(
+            f"LLM generation failed for model '{llm_settings.model_name}'."
+        ) from exc
+
     _set_llm_usage(_extract_usage(response))
 
     raw = response.text or "{}"
+
     try:
         return response_schema.model_validate_json(raw)
-    except ValidationError:
+    except (ValidationError, ValueError, json.JSONDecodeError) as exc:
         logger.exception(
             "structured_model_parsing_failed",
             extra={
-                "model_name": model_name,
+                "model_name": llm_settings.model_name,
                 "response_schema": response_schema.__name__,
             },
         )
-        return response_schema.model_validate(json.loads(raw))
+        raise LLMResponseValidationError(
+            f"LLM response failed validation for schema '{response_schema.__name__}'."
+        ) from exc
 
 
 async def close_gemini_client() -> None:

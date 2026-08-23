@@ -54,5 +54,5 @@ class InspectionAgent(BaseAgent):
             payload=payload,
             response_schema=schema,
             prompt_version=PROMPT_VERSIONS[f"inspection.{mode}"],
-            llm_settings=llm_settings if llm_settings is not None else LLMSettings(),
+            llm_settings=llm_settings if llm_settings else LLMSettings(),
         )

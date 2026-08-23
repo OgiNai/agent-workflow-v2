@@ -44,5 +44,5 @@ class CodeWriterAgent(BaseAgent):
             payload=payload,
             response_schema=CodeWriterOutput,
             prompt_version=PROMPT_VERSIONS[f"code_writer.{mode}"],
-            llm_settings=llm_settings if llm_settings is not None else LLMSettings(),
+            llm_settings=llm_settings if llm_settings else LLMSettings(),
         )

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import asyncio
+import pytest
 
 from apps.database.models import WorkflowRun
+from apps.database.session import close_database_engine
 from apps.database.unit_of_work import UnitOfWork
 
 
+@pytest.mark.anyio
 async def test_commit() -> None:
     print("=== Commit test ===")
 
@@ -35,6 +37,7 @@ async def test_commit() -> None:
         print("Workflow successfully committed.")
 
 
+@pytest.mark.anyio
 async def test_rollback() -> None:
     print("\n=== Rollback test ===")
 
@@ -68,6 +71,13 @@ async def test_rollback() -> None:
         print("Rollback successful.")
 
 
+@pytest.fixture(autouse=True)
+async def cleanup_database_engine():
+    yield
+    await close_database_engine()
+
+
+"""
 async def main() -> None:
     await test_commit()
     await test_rollback()
@@ -76,4 +86,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    import asyncio
+
     asyncio.run(main())
+"""

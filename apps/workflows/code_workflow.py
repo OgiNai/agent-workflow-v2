@@ -788,6 +788,16 @@ async def run_code_workflow(request: ReviewRequest) -> ReviewResponse:
             span.set_attribute("workflow.final_decision", result.final_decision)
             span.set_attribute("workflow.rounds_executed", result.rounds_executed)
 
+            if result.status == "failed":
+                span.set_status(
+                    Status(
+                        StatusCode.ERROR,
+                        "Workflow returned failed status.",
+                    )
+                )
+            else:
+                span.set_status(Status(StatusCode.OK))
+
             return result
         except Exception as exc:
             span.record_exception(exc)

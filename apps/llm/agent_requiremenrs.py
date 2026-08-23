@@ -1,4 +1,5 @@
-"""Requirements and policies passed with payload to _run_structured"""
+"""Requirements are constraints that the agent's output must satisfy while performing the task.
+Requirements and policies are passed with payload to _run_structured"""
 
 INSPECTION_REQUIREMENTS = [
     "Inspect the candidate code only.",

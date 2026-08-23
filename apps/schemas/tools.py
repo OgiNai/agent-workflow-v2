@@ -15,6 +15,9 @@ class ToolResult(BaseModel):
 
 
 class TestRunResult(BaseModel):
+    # disable pytest for that class
+    __test__ = False
+
     status: Literal["passed", "failed", "error", "timeout"]
     tests_total: int | None = None
     tests_passed: int | None = None

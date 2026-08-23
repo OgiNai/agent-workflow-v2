@@ -9,7 +9,8 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 from pydantic import BaseModel
 
 from apps.core.settings import LLMSettings
-from apps.llm.gemini_client import DEFAULT_MODEL, generate_structured
+from apps.llm.gemini_client import generate_structured
+from apps.llm.llm_exceptions import LLMError
 from apps.observability.telemetry import get_tracer
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,6 @@ class BaseAgent:
     """Common wrapper for schema-based LLM agent calls."""
 
     agent_name: str = "base_agent"
-    model_name: str = DEFAULT_MODEL
 
     async def _run_structured(
         self,
@@ -29,7 +29,7 @@ class BaseAgent:
         payload: dict[str, Any],
         response_schema: type[ResponseSchemaT],
         prompt_version: str,
-        llm_settings: LLMSettings | None = None,
+        llm_settings: LLMSettings,
     ) -> tuple[ResponseSchemaT, int]:
         """Run a structured LLM call and return output plus latency."""
 
@@ -45,7 +45,7 @@ class BaseAgent:
             attributes={
                 "agent.name": self.agent_name,
                 "llm.provider": "google",
-                "llm.model": self.model_name,
+                "llm.model": llm_settings.model_name,
                 "prompt.version": prompt_version,
                 "temperature": llm_settings.temperature,
             },
@@ -61,11 +61,9 @@ class BaseAgent:
                     system_instruction=system_instruction,
                     prompt=prompt,
                     response_schema=response_schema,
-                    model_name=self.model_name,
-                    temperature=llm_settings.temperature,
                     llm_settings=llm_settings,
                 )
-            except Exception as exc:
+            except LLMError as exc:
                 span.record_exception(exc)
                 span.set_status(
                     Status(
@@ -87,7 +85,7 @@ class BaseAgent:
                 extra={
                     "agent_name": self.agent_name,
                     "latency_ms": latency_ms,
-                    "model_name": self.model_name,
+                    "model_name": llm_settings.model_name,
                     "prompt_version": prompt_version,
                 },
             )
