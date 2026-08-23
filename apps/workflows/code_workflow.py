@@ -9,6 +9,7 @@ from time import perf_counter
 from typing import Any, TypeVar
 from uuid import uuid4
 
+from opentelemetry.trace import SpanKind, Status, StatusCode
 from pydantic import BaseModel
 
 from apps.agents.code_writer_agent import CodeWriterAgent
@@ -22,6 +23,9 @@ from apps.database.models import AgentStep, Artifact, WorkflowRun
 from apps.database.unit_of_work import UnitOfWork
 from apps.evals.execution_eval import calculate_execution_score
 from apps.evals.rule_based import calculate_rule_score
+from apps.llm.gemini_client import get_last_llm_usage
+from apps.llm.prompts import PROMPT_VERSIONS
+from apps.observability.telemetry import get_tracer
 from apps.schemas.agent_outputs import EvaluatorOutput
 from apps.schemas.requests import ReviewRequest
 from apps.schemas.responses import ReviewResponse
@@ -34,8 +38,6 @@ from apps.schemas.workflow import (
 from apps.tools.test_runner import TestRunResult, run_pytest_for_code
 from apps.workflows.artifact_manager import save_artifact
 from apps.workflows.input_router import route_input
-
-# from apps.workflows.retry_policy import should_retry
 
 logger = logging.getLogger(__name__)
 
@@ -457,7 +459,10 @@ class CodeWorkflow:
                 )
 
             except Exception as exc:
-                logger.exception("workflow_failed")
+                logger.exception(
+                    "workflow_failed",
+                    extra={"workflow_id": str(workflow_run_id)},
+                )
 
                 workflow.status = "failed"
                 workflow.final_decision = "failed"
@@ -559,6 +564,22 @@ class CodeWorkflow:
         metadata: dict[str, Any],
         detail: str | None,
     ) -> None:
+        usage = get_last_llm_usage()
+        prompt_version = PROMPT_VERSIONS.get(step_name)
+
+        trace_metadata = dict(metadata)
+
+        if usage is not None:
+            trace_metadata["llm_usage"] = {
+                "prompt_tokens": usage.prompt_tokens,
+                "completion_tokens": usage.completion_tokens,
+                "total_tokens": usage.total_tokens,
+                "cached_tokens": usage.cached_tokens,
+            }
+
+        if prompt_version is not None:
+            trace_metadata["prompt_version"] = prompt_version
+
         context.traces.append(
             WorkflowStepTrace(
                 step_name=step_name,
@@ -577,9 +598,15 @@ class CodeWorkflow:
                 iteration=round_number or 0,
                 step_order=step_order,
                 agent_name=step_name,
+                prompt_version=prompt_version,
                 duration_ms=(int(latency_ms) if latency_ms is not None else None),
                 input_json=input_data,
                 output_json=metadata,
+                prompt_tokens=(usage.prompt_tokens if usage is not None else None),
+                completion_tokens=(
+                    usage.completion_tokens if usage is not None else None
+                ),
+                total_tokens=(usage.total_tokens if usage is not None else None),
                 status=status,
                 error=detail,
             )
@@ -721,6 +748,7 @@ class CodeWorkflow:
         )
 
 
+# @trace_workflow
 async def run_code_workflow(request: ReviewRequest) -> ReviewResponse:
     workflow_settings = get_workflow_settings()
 
@@ -734,6 +762,39 @@ async def run_code_workflow(request: ReviewRequest) -> ReviewResponse:
         always_retry=workflow_settings.workflow_always_retry,
     )
 
-    workflow = CodeWorkflow(config=workflow_config)
+    tracer = get_tracer("apps.workflows")
 
-    return await workflow.run(request)
+    with tracer.start_as_current_span(
+        "workflow.run",
+        kind=SpanKind.INTERNAL,
+        attributes={
+            "workflow.operation": "run_code_workflow",
+            "workflow.request_task_type": request.task_type,
+            "workflow.request_source_type": (
+                "inline_code"
+                if request.code
+                else "file_path"
+                if request.file_path
+                else "none"
+            ),
+            "workflow.max_rounds": workflow_config.max_rounds,
+        },
+    ) as span:
+        try:
+            result = await CodeWorkflow(config=workflow_config).run(request)
+
+            span.set_attribute("workflow.id", str(result.workflow_run_id))
+            span.set_attribute("workflow.status", result.status)
+            span.set_attribute("workflow.final_decision", result.final_decision)
+            span.set_attribute("workflow.rounds_executed", result.rounds_executed)
+
+            return result
+        except Exception as exc:
+            span.record_exception(exc)
+            span.set_status(
+                Status(
+                    StatusCode.ERROR,
+                    str(exc),
+                )
+            )
+            raise

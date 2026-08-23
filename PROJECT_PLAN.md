@@ -608,14 +608,59 @@ Deliverables:
 
 Observability.
 
+                    CodeWorkflow
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+          ▼              ▼              ▼
+      Business       Persistence     Observability
+       result            │                │
+          │              │                │
+   ReviewResponse     PostgreSQL      OpenTelemetry
+                         │                │
+                  WorkflowRun         Traces
+                  AgentStep           Metrics
+                  Artifact             Logs
+                         │
+                         │
+                    durable history
+
 Implement
 
-- structured logging
-- OpenTelemetry
-- tracing
-- token usage
-- latency
-- prompt version tracking
+# Step 3.1 - Production logging strategy
+
+- structured logs
+- correlation IDs
+- operational/error events
+- don't duplicate normal workflow events
+
+# Step 3.2 - OpenTelemetry foundation
+
+- OTLP
+- configurable exporter
+- optional collector/backend
+- FastAPI lifecycle integration
+
+# Step 3.3 - Tracing
+
+- workflow span
+- child spans per meaningful workflow operation
+- attributes for workflow ID, round, agent, model, etc.
+- exceptions/status recorded on spans
+
+# Step 3.4 - LLM usage tracking
+
+- extract Gemini usage metadata
+- propagate it from Gemini client → agent → _trace_agent
+- persist to existing AgentStep fields
+- expose relevant usage in telemetry
+
+# Step 3.5 - Prompt versioning
+
+- retain historical prompts
+- explicit current version
+- persist version with each LLM execution
+- make historical evaluation reproducible
 
 ---
 

@@ -72,6 +72,8 @@ class AgentStep(Base):
 
     agent_name: Mapped[str] = mapped_column(String(100))
 
+    prompt_version: Mapped[str | None] = mapped_column(String(50))
+
     duration_ms: Mapped[int | None] = mapped_column(Integer)
 
     input_json: Mapped[dict | None] = mapped_column(JSON)

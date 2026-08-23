@@ -1,6 +1,6 @@
 """Planner agent.
 
-Milestone 1 keeps this deterministic to avoid wasting LLM calls on routing. The class still exposes an
+Keeps this deterministic to avoid wasting LLM calls on routing. The class still exposes an
 agent-like interface and records a planner step, so it can be switched to an LLM planner later.
 """
 
@@ -37,7 +37,7 @@ class PlannerAgent:
             requires_tests=True,
             max_rounds=max_rounds,
             steps=steps,
-            notes=["Deterministic planner used for Milestone 1."],
+            notes=["Deterministic planner."],
         )
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
         return plan, latency_ms

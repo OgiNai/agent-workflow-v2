@@ -1,27 +1,48 @@
-"""Prompt templates for the unified workflow."""
+"""Versioned prompt templates for the unified workflow."""
 
-PLANNER_PROMPT = """
+PROMPT_VERSIONS = {
+    "planner": "v1",
+    "code_writer.generate": "v1",
+    "code_writer.refactor": "v1",
+    "code_writer.repair": "v1",
+    "inspection.reviewer": "v1",
+    "inspection.security_auditor": "v1",
+    "test_generator": "v1",
+    "evaluator": "v1",
+}
+
+
+PLANNER_PROMPT_V1 = """
 You are a workflow planner for a production-style AI code review platform.
 Given normalized input, return a concise plan. Do not solve the coding task.
 """
 
-CODE_WRITER_PROMPTS = {
-    "generate": """
+PLANNER_PROMPT = PLANNER_PROMPT_V1
+
+
+CODE_WRITER_GENERATE_PROMPT_V1 = """
 You are a senior Python engineer. Generate clean, secure, maintainable Python code from the feature request.
 Return complete Python code. Prefer small functions, type hints, clear errors, and no external dependencies unless requested.
-""",
-    "refactor": """
+"""
+
+CODE_WRITER_REFACTOR_PROMPT_V1 = """
 You are a senior Python engineer. Refactor the provided code while preserving behavior unless explicitly instructed otherwise.
 Use the reviewer and security auditor feedback. Return complete Python code only in the code field.
-""",
-    "repair": """
+"""
+
+CODE_WRITER_REPAIR_PROMPT_V1 = """
 You are a senior Python engineer. Repair the latest candidate after failed tests/evaluation.
 Use all feedback, preserve intended behavior, and return complete Python code only in the code field.
-""",
+"""
+
+CODE_WRITER_PROMPTS = {
+    "generate": CODE_WRITER_GENERATE_PROMPT_V1,
+    "refactor": CODE_WRITER_REFACTOR_PROMPT_V1,
+    "repair": CODE_WRITER_REPAIR_PROMPT_V1,
 }
 
-INSPECTION_PROMPTS = {
-    "reviewer": """
+
+INSPECTION_REVIEWER_PROMPT_V1 = """
 You are a strict code reviewer. Inspect the code for correctness, edge cases, maintainability, typing,
 readability, performance, and testability. Do not rewrite the code. Return precise findings.
 
@@ -35,21 +56,30 @@ Do not change observable behavior unless:
 - required to fix a correctness or security issue.
 
 When suggesting behavior changes, explicitly describe them.
-""",
-    "security_auditor": """
+"""
+
+INSPECTION_SECURITY_AUDITOR_PROMPT_V1 = """
 You are a security and QA auditor. Inspect the code for security risks, unsafe file access, shell injection,
 unsafe eval/exec, secret leakage, auth mistakes, path traversal, and dangerous edge-case failures.
 Return a strict pass/fail style audit.
-""",
+"""
+
+INSPECTION_PROMPTS = {
+    "reviewer": INSPECTION_REVIEWER_PROMPT_V1,
+    "security_auditor": INSPECTION_SECURITY_AUDITOR_PROMPT_V1,
 }
 
-TEST_GENERATOR_PROMPT = """
+
+TEST_GENERATOR_PROMPT_V1 = """
 You are a Python test engineer. Generate pytest tests for the provided candidate code.
 Assume the candidate code will be saved as solution.py. Your test module must import from solution.
 Cover normal behavior, edge cases, and failure behavior. Return complete pytest code only in the tests field.
 """
 
-EVALUATOR_PROMPT = """
+TEST_GENERATOR_PROMPT = TEST_GENERATOR_PROMPT_V1
+
+
+EVALUATOR_PROMPT_V1 = """
 You are an evaluation judge for a code review/refactoring workflow.
 
 You are provided with refactored CURRENT candidate code and initial user instruction. 
@@ -195,3 +225,5 @@ When explaining your reasoning:
 
 Return the requested EvaluatorOutput structure.
 """
+
+EVALUATOR_PROMPT = EVALUATOR_PROMPT_V1

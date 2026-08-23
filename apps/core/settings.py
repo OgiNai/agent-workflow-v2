@@ -43,7 +43,21 @@ class WorkflowSettings(BaseSettings):
     model_config = shared_config
 
 
-# cache AuthSettings and WorkflowSettings so it is only created once and then reused
+class TelemetrySettings(BaseSettings):
+    otel_service_name: str = "agent-workflow-v2"
+    otel_exporter_otlp_endpoint: str | None = None
+    otel_console_exporter: bool = False
+
+    model_config = shared_config
+
+
+class LLMSettings(BaseSettings):
+    initial_delay: float = 5.0
+    attempts: int = 3
+    temperature: float = 0.2
+
+
+# cache settings so they are only created once and then reused
 @lru_cache
 def get_auth_settings() -> AuthSettings:
     return AuthSettings()
@@ -52,3 +66,13 @@ def get_auth_settings() -> AuthSettings:
 @lru_cache
 def get_workflow_settings() -> WorkflowSettings:
     return WorkflowSettings()
+
+
+@lru_cache
+def get_telemetry_settings() -> TelemetrySettings:
+    return TelemetrySettings()
+
+
+@lru_cache
+def get_llm_settings() -> LLMSettings:
+    return LLMSettings()
