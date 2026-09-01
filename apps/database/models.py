@@ -48,10 +48,12 @@ class WorkflowRun(Base):
 
     metadata_json: Mapped[dict | None] = mapped_column(JSON)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow  # lambda: datetime.now(timezone.UTC).replace(tzinfo=None)
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=datetime.utcnow,  # lambda: datetime.now(timezone.UTC).replace(tzinfo=None),
+        onupdate=datetime.utcnow,  # lambda: datetime.now(timezone.UTC).replace(tzinfo=None),
     )
 
 
@@ -86,7 +88,9 @@ class AgentStep(Base):
     status: Mapped[str] = mapped_column(String(50))
     error: Mapped[str | None] = mapped_column(Text)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow  # lambda: datetime.now(timezone.UTC).replace(tzinfo=None)
+    )
 
 
 class Artifact(Base):
@@ -106,7 +110,9 @@ class Artifact(Base):
 
     size_bytes: Mapped[int | None] = mapped_column(Integer)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow  # lambda: datetime.now(timezone.UTC).replace(tzinfo=None)
+    )
 
 
 class Feedback(Base):
@@ -132,4 +138,6 @@ class Feedback(Base):
     accepted: Mapped[bool] = mapped_column(Boolean, nullable=False)
     comments: Mapped[str | None] = mapped_column(Text)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow  # lambda: datetime.now(timezone.UTC).replace(tzinfo=None)
+    )

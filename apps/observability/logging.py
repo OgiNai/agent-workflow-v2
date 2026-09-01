@@ -2,14 +2,15 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from opentelemetry import trace
 
 
 class JsonFormatter(logging.Formatter):
-    """Format log records as structured JSON."""
+    """Format log records as structured JSON.
+    Decide which fields from the LogRecord become JSON fields."""
 
     def format(self, record: logging.LogRecord) -> str:
         current_span = trace.get_current_span()
@@ -18,7 +19,7 @@ class JsonFormatter(logging.Formatter):
         payload: dict[str, Any] = {
             "timestamp": datetime.fromtimestamp(
                 record.created,
-                tz=datetime.UTC,
+                tz=UTC,  # datetime.now(UTC).replace(tzinfo=None),
             ).isoformat(),
             "level": record.levelname,
             "logger": record.name,

@@ -9,7 +9,7 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 from pydantic import BaseModel
 
 from apps.core.settings import LLMSettings
-from apps.llm.gemini_client import generate_structured
+from apps.llm.gemini_client import generate_structured, get_last_llm_usage
 from apps.llm.llm_exceptions import LLMError
 from apps.observability.telemetry import get_tracer
 
@@ -74,11 +74,15 @@ class BaseAgent:
                 raise
 
             latency_ms = int((time.perf_counter() - started) * 1000)
+            span.set_attribute("llm.latency_ms", latency_ms)
 
-            span.set_attribute(
-                "llm.latency_ms",
-                latency_ms,
-            )
+            usage = get_last_llm_usage()
+            if usage is not None:
+                span.set_attribute("llm.prompt_tokens", usage.prompt_tokens)
+                span.set_attribute("llm.completion_tokens", usage.completion_tokens)
+                span.set_attribute("llm.total_tokens", usage.total_tokens)
+                if usage.cached_tokens is not None:
+                    span.set_attribute("llm.cached_tokens", usage.cached_tokens)
 
             logger.info(
                 "agent_call_completed",

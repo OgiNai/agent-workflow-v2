@@ -26,7 +26,7 @@ async def run_pytest_for_code(
     with tracer.start_as_current_span("tool.pytest", kind=SpanKind.INTERNAL) as span:
         started = time.perf_counter()
 
-        span.set_attribute("test_runner.timeout_seconds", timeout_seconds)
+        span.set_attribute("tool.pytest.timeout_seconds", timeout_seconds)
 
         with tempfile.TemporaryDirectory(prefix="agent_review_tests_") as temp_dir:
             temp_path = Path(temp_dir)
@@ -61,7 +61,7 @@ async def run_pytest_for_code(
                         stderr=stderr_bytes.decode(errors="replace"),
                     )
 
-                    span.set_attribute("test_runner.status", result.status)
+                    span.set_attribute("tool.pytest.status", result.status)
                     span.set_status(
                         Status(
                             StatusCode.ERROR,
@@ -114,13 +114,13 @@ async def run_pytest_for_code(
             tests_failed=failed,
         )
 
-        span.set_attribute("test_runner.status", result.status)
+        span.set_attribute("tool.pytest.status", result.status)
 
         if result.tests_total is not None:
-            span.set_attribute("test_runner.tests_total", result.tests_total)
+            span.set_attribute("tool.pytest.tests_total", result.tests_total)
 
-        span.set_attribute("test_runner.tests_passed", result.tests_passed)
-        span.set_attribute("test_runner.tests_failed", result.tests_failed)
+        span.set_attribute("tool.pytest.tests_passed", result.tests_passed)
+        span.set_attribute("tool.pytest.tests_failed", result.tests_failed)
 
         if result.status == "passed":
             span.set_status(Status(StatusCode.OK))

@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "tests_total": 5,
+  "tests_passed": 5,
+  "tests_failed": 0,
+  "duration_ms": 1552,
+  "exit_code": 0,
+  "stdout": ".....                                                                    [100%]\n5 passed in 0.06s\n",
+  "stderr": ""
+}

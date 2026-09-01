@@ -1,8 +1,12 @@
 """Deterministic input router for the unified workflow."""
 
 import re
+import time
+
+from opentelemetry.trace import Status, StatusCode
 
 # from typing import Literal
+from apps.observability.telemetry import get_tracer
 from apps.schemas.requests import ReviewRequest
 from apps.schemas.workflow import ResolvedTaskType, RouterResult
 from apps.tools.safe_file_reader import read_project_file
@@ -37,38 +41,68 @@ def _extract_markdown_code(text: str) -> str | None:
 
 def route_input(request: ReviewRequest) -> RouterResult:
     """Normalize raw API input before PlannerAgent is called."""
-    if request.file_path:
-        file_result = read_project_file(request.file_path)
 
-        if file_result.status == "failed":
-            raise ValueError(file_result.error or "Failed to read source file.")
+    started = time.perf_counter()
+    tracer = get_tracer("apps.workflows")
 
-        source_type = "file_path"
-        source_code = file_result.output
-        source_path = request.file_path
+    with tracer.start_as_current_span(
+        "workflow.input_router",
+        attributes={
+            "workflow.requested_task_type": request.task_type,
+        },
+    ) as span:
+        if request.file_path:
+            file_result = read_project_file(request.file_path)
 
-    elif request.code:
-        source_type = "inline_code"
-        source_code = _extract_markdown_code(request.code) or request.code
-        source_path = None
+            if file_result.status == "failed":
+                span.set_status(
+                    Status(
+                        StatusCode.ERROR,
+                        "Input routing failed to read source file.",
+                    )
+                )
+                raise ValueError(file_result.error or "Failed to read source file.")
 
-    else:
-        source_type = "none"
-        source_code = None
-        source_path = None
+            source_type = "file_path"
+            source_code = file_result.output
+            source_path = request.file_path
 
-    if request.task_type == "auto":
-        task_type: ResolvedTaskType = (
-            "review_refactor" if source_code is not None else "generate"
+        elif request.code:
+            source_type = "inline_code"
+            source_code = _extract_markdown_code(request.code) or request.code
+            source_path = None
+
+        else:
+            source_type = "none"
+            source_code = None
+            source_path = None
+
+        if request.task_type == "auto":
+            task_type: ResolvedTaskType = (
+                "review_refactor" if source_code is not None else "generate"
+            )
+        else:
+            task_type = request.task_type
+
+        span.set_attribute("workflow.task_type", task_type)
+        span.set_attribute("workflow.source_type", source_type)
+        span.set_attribute(
+            "workflow.code_available",
+            source_code is not None,
         )
-    else:
-        task_type = request.task_type
+        span.set_attribute(
+            "workflow.source_path_provided",
+            request.file_path is not None,
+        )
 
-    return RouterResult(
-        task_type=task_type,
-        source_type=source_type,
-        instruction=request.instruction,
-        code_available=source_code is not None,
-        code=source_code,
-        source_path=source_path,
-    )
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        span.set_attribute("workflow.latency_ms", latency_ms)
+
+        return RouterResult(
+            task_type=task_type,
+            source_type=source_type,
+            instruction=request.instruction,
+            code_available=source_code is not None,
+            code=source_code,
+            source_path=source_path,
+        )

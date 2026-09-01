@@ -588,7 +588,7 @@ class CodeWorkflow:
                 latency_ms=latency_ms,
                 round_number=round_number,
                 detail=detail,
-                metadata=metadata,
+                metadata=trace_metadata,
             )
         )
 
