@@ -6,6 +6,7 @@ from apps.llm.agent_requiremenrs import EVALUATOR_DECISION_POLICY
 from apps.llm.prompts import EVALUATOR_PROMPT, PROMPT_VERSIONS
 from apps.schemas.agent_outputs import (
     EvaluatorOutput,
+    Finding,
     ReviewerOutput,
     SecurityAuditOutput,
 )
@@ -29,11 +30,20 @@ class EvaluatorAgent(BaseAgent):
         round_number: int,
         llm_settings: LLMSettings | None = None,
     ) -> tuple[EvaluatorOutput, int]:
+        findings = [
+            *review.findings,
+            *security.findings,
+        ]
         payload = {
             "instruction": instruction,
             "candidate_code": code,
-            "review": review.model_dump(),
-            "security": security.model_dump(),
+            "review_findings": [
+                finding.model_dump(mode="json") for finding in review.findings
+            ],
+            "security_findings": [
+                finding.model_dump(mode="json") for finding in security.findings
+            ],
+            "findings": [finding.model_dump(mode="json") for finding in findings],
             "test_result": test_result.model_dump(),
             "rule_score": rule_score,
             "rule_notes": rule_notes,
@@ -49,6 +59,11 @@ class EvaluatorAgent(BaseAgent):
             prompt_version=PROMPT_VERSIONS["evaluator"],
             llm_settings=llm_settings if llm_settings else LLMSettings(),
         )
+        result = self._normalize_findings(
+            result=result,
+            original_findings=findings,
+        )
+
         calculated_llm_score = round(
             0.35 * result.security_score
             + 0.30 * result.maintainability_score
@@ -71,3 +86,34 @@ class EvaluatorAgent(BaseAgent):
         )
 
         return result, latency_ms
+
+    @staticmethod
+    def _normalize_findings(
+        *,
+        result: EvaluatorOutput,
+        original_findings: list[Finding],
+    ) -> EvaluatorOutput:
+        """Ensure evaluator findings correspond to the original inspection findings."""
+
+        evaluated_by_id = {finding.id: finding for finding in result.findings}
+
+        normalized_findings: list[Finding] = []
+
+        for original in original_findings:
+            evaluated = evaluated_by_id.get(original.id)
+
+            if evaluated is None:
+                normalized_findings.append(
+                    original.model_copy(update={"status": "unresolved"})
+                )
+                continue
+
+            normalized_findings.append(
+                original.model_copy(
+                    update={
+                        "status": evaluated.status,
+                    }
+                )
+            )
+
+        return result.model_copy(update={"findings": normalized_findings})
