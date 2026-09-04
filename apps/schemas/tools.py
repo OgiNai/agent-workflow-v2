@@ -14,15 +14,41 @@ class ToolResult(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class TestCaseResult(BaseModel):
+    """Structured result for an individual candidate test."""
+
+    nodeid: str
+    outcome: Literal[
+        "passed",
+        "failed",
+        "skipped",
+        "xfailed",
+        "xpassed",
+    ]
+    duration_ms: int | None = None
+    failure_message: str | None = None
+    traceback: str | None = None
+
+
 class TestRunResult(BaseModel):
-    # disable pytest for that class
+    """Structured result of executing generated candidate tests."""
+
+    # Prevent pytest from treating this Pydantic model as a test class.
     __test__ = False
 
     status: Literal["passed", "failed", "error", "timeout"]
-    tests_total: int | None = None
-    tests_passed: int | None = None
-    tests_failed: int | None = None
+
+    tests_total: int = 0
+    tests_passed: int = 0
+    tests_failed: int = 0
+    tests_skipped: int = 0
+    tests_xfailed: int = 0
+    tests_xpassed: int = 0
+
     duration_ms: int
     exit_code: int | None = None
+
+    tests: list[TestCaseResult] = Field(default_factory=list)
+
     stdout: str = ""
     stderr: str = ""

@@ -1,17 +1,17 @@
-"""Deterministic pytest runner tool."""
+"""Deterministic pytest runner tool for generated candidate tests."""
 
 import asyncio
-import re
+import json
 import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Literal
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from apps.observability.telemetry import get_tracer
 from apps.schemas.tools import TestRunResult
+from apps.tools.pytest_report import parse_pytest_json_report
 
 
 async def run_pytest_for_code(
@@ -30,8 +30,12 @@ async def run_pytest_for_code(
 
         with tempfile.TemporaryDirectory(prefix="agent_review_tests_") as temp_dir:
             temp_path = Path(temp_dir)
-            (temp_path / "solution.py").write_text(code, encoding="utf-8")
-            (temp_path / "test_solution.py").write_text(tests, encoding="utf-8")
+            solution_path = temp_path / "solution.py"
+            tests_path = temp_path / "test_solution.py"
+            report_path = temp_path / "pytest-report.json"
+
+            solution_path.write_text(code, encoding="utf-8")
+            tests_path.write_text(tests, encoding="utf-8")
 
             try:
                 process = await asyncio.create_subprocess_exec(
@@ -40,6 +44,8 @@ async def run_pytest_for_code(
                     "pytest",
                     "test_solution.py",
                     "-q",
+                    "--json-report",
+                    f"--json-report-file={report_path}",
                     cwd=temp_path,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
@@ -61,7 +67,8 @@ async def run_pytest_for_code(
                         stderr=stderr_bytes.decode(errors="replace"),
                     )
 
-                    span.set_attribute("tool.pytest.status", result.status)
+                    _record_telemetry(span, result)
+
                     span.set_status(
                         Status(
                             StatusCode.ERROR,
@@ -86,50 +93,83 @@ async def run_pytest_for_code(
                     stderr=str(exc),
                 )
 
-        exit_code = process.returncode
+            stdout = stdout_bytes.decode(errors="replace")
+            stderr = stderr_bytes.decode(errors="replace")
+            exit_code = process.returncode
+            duration_ms = int((time.perf_counter() - started) * 1000)
 
-        status: Literal["passed", "failed"] = "passed" if exit_code == 0 else "failed"
+            try:
+                report = _read_json_report(report_path)
+                result = parse_pytest_json_report(
+                    report,
+                    duration_ms=duration_ms,
+                    exit_code=exit_code,
+                    stdout=stdout,
+                    stderr=stderr,
+                )
+            except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+                span.record_exception(exc)
 
-        stdout = stdout_bytes.decode(errors="replace")
-        stderr = stderr_bytes.decode(errors="replace")
+                result = TestRunResult(
+                    status="error",
+                    duration_ms=duration_ms,
+                    exit_code=exit_code,
+                    stdout=stdout,
+                    stderr=stderr,
+                )
 
-        passed = failed = 0
+                _record_telemetry(span, result)
 
-        if match := re.search(r"(\d+)\s+passed", stdout):
-            passed = int(match.group(1))
+                span.set_status(
+                    Status(
+                        StatusCode.ERROR,
+                        "Pytest JSON report was unavailable or invalid.",
+                    )
+                )
 
-        if match := re.search(r"(\d+)\s+failed", stdout):
-            failed = int(match.group(1))
+                return result
 
-        tests_total = passed + failed if (passed or failed) else None
-
-        result = TestRunResult(
-            status=status,
-            duration_ms=int((time.perf_counter() - started) * 1000),
-            exit_code=exit_code,
-            stdout=stdout,
-            stderr=stderr,
-            tests_total=tests_total,
-            tests_passed=passed,
-            tests_failed=failed,
-        )
-
-        span.set_attribute("tool.pytest.status", result.status)
-
-        if result.tests_total is not None:
-            span.set_attribute("tool.pytest.tests_total", result.tests_total)
-
-        span.set_attribute("tool.pytest.tests_passed", result.tests_passed)
-        span.set_attribute("tool.pytest.tests_failed", result.tests_failed)
+        _record_telemetry(span, result)
 
         if result.status == "passed":
             span.set_status(Status(StatusCode.OK))
-        else:
+        elif result.status == "failed":
             span.set_status(
                 Status(
                     StatusCode.ERROR,
                     "Pytest reported failed tests.",
                 )
             )
+        else:
+            span.set_status(
+                Status(
+                    StatusCode.ERROR,
+                    f"Pytest execution ended with status '{result.status}'.",
+                )
+            )
 
         return result
+
+
+def _read_json_report(report_path: Path) -> dict:
+    """Read and validate the generated pytest JSON report."""
+
+    report_text = report_path.read_text(encoding="utf-8")
+    report = json.loads(report_text)
+
+    if not isinstance(report, dict):
+        raise TypeError("Pytest JSON report must contain a JSON object.")
+
+    return report
+
+
+def _record_telemetry(span, result: TestRunResult) -> None:
+    """Record structured candidate-test execution metrics on the span."""
+
+    span.set_attribute("tool.pytest.status", result.status)
+    span.set_attribute("tool.pytest.tests_total", result.tests_total)
+    span.set_attribute("tool.pytest.tests_passed", result.tests_passed)
+    span.set_attribute("tool.pytest.tests_failed", result.tests_failed)
+    span.set_attribute("tool.pytest.tests_skipped", result.tests_skipped)
+    span.set_attribute("tool.pytest.tests_xfailed", result.tests_xfailed)
+    span.set_attribute("tool.pytest.tests_xpassed", result.tests_xpassed)

@@ -668,51 +668,128 @@ Implement
 
 Evaluation.
 
-Complete
+The evaluation system provides deterministic, structured and reproducible
+measurement of workflow quality.
 
-- benchmark framework
-- evaluation reports
-- metrics storage
-- comparison tooling
+### Step 4.1 — Normalized evaluation findings
 
-### Future Evaluation Inputs
+- Introduce normalized `Finding` schema.
+- Reviewer and Security Auditor return individual findings.
+- Assign stable application-generated finding IDs.
+- Evaluator determines whether each finding is `resolved` or `unresolved`.
+- Preserve original finding metadata during evaluation.
+- Persist findings through existing `AgentStep.output_json`.
+- Do not create a separate findings database table.
 
-The Evaluator should consume structured artifacts only.
+### Step 4.2 — Structured pytest evaluation
 
-Inputs include:
-
-- normalized reviewer findings
-- normalized security findings
-- structured pytest report
-- deterministic rule evaluation
-- candidate code
-
-Avoid evaluating free-form console output whenever structured data is available.
-
-### Evaluation Pipeline Improvements
-
-Refine the evaluator's inputs and reasoning.
-
-- Replace coarse inspection statuses (e.g. `SecurityAuditOutput.status = "FAILED"`) with a normalized list of findings that the evaluator verifies against the current candidate.
-- Track each reviewer/security finding individually as `resolved` or `unresolved` instead of treating the original inspection result as the current code status.
-- Ensure evaluator explanations distinguish between:
-  - historical issues identified in the original code,
-  - issues resolved by the refactoring,
-  - issues still remaining in the candidate.
-
-### Test Infrastructure Improvements
-
-Improve the deterministic test runner by consuming structured pytest output instead of parsing console text.
+Improve the deterministic test runner by consuming structured pytest output.
 
 - Replace stdout parsing with `pytest-json-report`.
-- Populate `TestRunResult` from the JSON report rather than regular expressions.
-- Capture additional execution metadata, including:
+- Make the JSON report the canonical test execution input.
+- Populate `TestRunResult` from the JSON report.
+- Capture:
   - total tests
-  - passed / failed / skipped / xfailed / xpassed
+  - passed
+  - failed
+  - skipped
+  - xfailed
+  - xpassed
   - individual test results
-  - failure messages and tracebacks
+  - failure messages
+  - tracebacks
   - execution duration
-- Make the JSON report the canonical input for the Evaluator rather than pytest stdout.
+- Remove dependence on regex parsing of pytest console output.
+- Ensure the Evaluator consumes `TestRunResult`.
+
+### Step 4.3 — Deterministic evaluation scoring and decision policy
+
+Separate qualitative LLM evaluation from deterministic workflow decisions.
+
+LLM responsibilities:
+
+- evaluate correctness
+- evaluate security
+- evaluate maintainability
+- determine finding resolution
+- provide explanations
+
+Deterministic responsibilities:
+
+- rule score
+- execution score
+- finding severity penalties
+- final score calculation
+- final evaluation decision
+
+Define explicit thresholds for:
+
+- pass
+- pass_with_warnings
+- retry
+
+High and critical unresolved findings must be able to force retry.
+
+Failed execution must be able to force retry.
+
+The Evaluator must never know or enforce retry limits.
+
+Add unit tests covering every decision boundary.
+
+### Step 4.4 — Evaluation benchmark framework
+
+Create a reproducible benchmark corpus.
+
+Each benchmark case should define:
+
+- user instruction
+- source code
+- expected findings
+- expected behavior
+- security expectations
+- test expectations
+
+Execute the complete workflow against benchmark cases and collect structured
+evaluation results.
+
+### Step 4.5 — Evaluation reports
+
+Generate structured benchmark reports containing:
+
+- benchmark run metadata
+- workflow/model configuration
+- prompt versions
+- per-case evaluation results
+- finding resolution
+- test results
+- final scores
+- final decisions
+- aggregate metrics
+
+### Step 4.6 — Metrics storage
+
+Persist benchmark-level evaluation metrics when existing workflow persistence
+is insufficient for historical querying.
+
+Prefer existing `WorkflowRun` and `AgentStep` JSON data where practical.
+
+Introduce dedicated metrics persistence only when a concrete querying or
+reporting requirement justifies it.
+
+### Step 4.7 — Evaluation comparison tooling
+
+Provide comparison of benchmark runs across:
+
+- final score
+- rule score
+- execution score
+- correctness
+- security
+- maintainability
+- finding resolution rate
+- retry rate
+- latency
+- LLM usage
 
 ---
 

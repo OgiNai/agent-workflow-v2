@@ -100,11 +100,6 @@ class SecurityAuditOutput(BaseModel):
             if finding.status == "unresolved"
         ]
 
-    @property
-    def required_fixes(self) -> list[str]:
-        """Return unresolved security finding descriptions."""
-        return self.vulnerabilities
-
 
 class TestGeneratorOutput(BaseModel):
     # disable pytest for that class
