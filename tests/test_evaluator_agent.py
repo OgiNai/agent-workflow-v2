@@ -1,5 +1,11 @@
 from apps.agents.evaluator_agent import EvaluatorAgent
-from apps.schemas.agent_outputs import EvaluatorOutput, Finding
+from apps.schemas.agent_outputs import (
+    EvaluatorOutput,
+    Finding,
+    ReviewerOutput,
+    SecurityAuditOutput,
+)
+from apps.schemas.tools import TestRunResult
 
 
 def make_finding(
@@ -21,7 +27,7 @@ def make_evaluator_output(
     findings: list[Finding],
 ) -> EvaluatorOutput:
     return EvaluatorOutput(
-        final_decision="pass_with_warnings",
+        final_decision="retry",
         rule_score=0.0,
         execution_score=0.0,
         security_score=0.9,
@@ -29,6 +35,31 @@ def make_evaluator_output(
         correctness_score=0.9,
         findings=findings,
     )
+
+
+def make_test_result() -> TestRunResult:
+    return TestRunResult(
+        status="passed",
+        tests_total=10,
+        tests_passed=10,
+        tests_failed=0,
+        tests_skipped=0,
+        tests_xfailed=0,
+        tests_xpassed=0,
+        duration_ms=100,
+    )
+
+
+def make_review(
+    findings: list[Finding],
+) -> ReviewerOutput:
+    return ReviewerOutput(findings=findings)
+
+
+def make_security(
+    findings: list[Finding],
+) -> SecurityAuditOutput:
+    return SecurityAuditOutput(findings=findings)
 
 
 def test_evaluator_combined_findings_are_flattened():

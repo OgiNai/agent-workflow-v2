@@ -2,7 +2,8 @@
 
 from apps.agents.base_agent import BaseAgent
 from apps.core.settings import LLMSettings
-from apps.llm.agent_requiremenrs import EVALUATOR_DECISION_POLICY
+from apps.evals.decision_policy import determine_decision
+from apps.evals.scoring import calculate_final_score, calculate_llm_score
 from apps.llm.prompts import EVALUATOR_PROMPT, PROMPT_VERSIONS
 from apps.schemas.agent_outputs import (
     EvaluatorOutput,
@@ -34,6 +35,7 @@ class EvaluatorAgent(BaseAgent):
             *review.findings,
             *security.findings,
         ]
+
         payload = {
             "instruction": instruction,
             "candidate_code": code,
@@ -44,12 +46,11 @@ class EvaluatorAgent(BaseAgent):
                 finding.model_dump(mode="json") for finding in security.findings
             ],
             "findings": [finding.model_dump(mode="json") for finding in findings],
-            "test_result": test_result.model_dump(),
+            "test_result": test_result.model_dump(mode="json"),
             "rule_score": rule_score,
             "rule_notes": rule_notes,
             "execution_score": execution_score,
             "round_number": round_number,
-            "decision_policy": EVALUATOR_DECISION_POLICY,
         }
 
         result, latency_ms = await self._run_structured(
@@ -59,19 +60,28 @@ class EvaluatorAgent(BaseAgent):
             prompt_version=PROMPT_VERSIONS["evaluator"],
             llm_settings=llm_settings if llm_settings else LLMSettings(),
         )
+
         result = self._normalize_findings(
             result=result,
             original_findings=findings,
         )
 
-        calculated_llm_score = round(
-            0.35 * result.security_score
-            + 0.30 * result.maintainability_score
-            + 0.35 * result.correctness_score,
-            3,
+        llm_score = calculate_llm_score(
+            correctness_score=result.correctness_score,
+            security_score=result.security_score,
+            maintainability_score=result.maintainability_score,
         )
-        calculated_final_score = round(
-            0.25 * rule_score + 0.45 * execution_score + 0.30 * calculated_llm_score, 3
+
+        final_score = calculate_final_score(
+            rule_score=rule_score,
+            execution_score=execution_score,
+            llm_score=llm_score,
+        )
+
+        final_decision = determine_decision(
+            final_score=final_score,
+            test_result=test_result,
+            findings=result.findings,
         )
 
         # overwrite rule_score and execution_score to make sure LLM has not changed them
@@ -80,8 +90,9 @@ class EvaluatorAgent(BaseAgent):
             update={
                 "rule_score": rule_score,
                 "execution_score": execution_score,
-                "llm_score": calculated_llm_score,
-                "final_score": calculated_final_score,
+                "llm_score": llm_score,
+                "final_score": final_score,
+                "final_decision": final_decision,
             }
         )
 
@@ -93,7 +104,7 @@ class EvaluatorAgent(BaseAgent):
         result: EvaluatorOutput,
         original_findings: list[Finding],
     ) -> EvaluatorOutput:
-        """Ensure evaluator findings correspond to the original inspection findings."""
+        """Ensure evaluator findings correspond to original findings."""
 
         evaluated_by_id = {finding.id: finding for finding in result.findings}
 

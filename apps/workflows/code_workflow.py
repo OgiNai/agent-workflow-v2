@@ -21,8 +21,8 @@ from apps.core.settings import get_workflow_settings
 from apps.core.workflow_config import WorkflowConfig
 from apps.database.models import AgentStep, Artifact, WorkflowRun
 from apps.database.unit_of_work import UnitOfWork
-from apps.evals.execution_eval import calculate_execution_score
 from apps.evals.rule_based import calculate_rule_score
+from apps.evals.scoring import calculate_execution_score
 from apps.llm.gemini_client import get_last_llm_usage
 from apps.llm.prompts import PROMPT_VERSIONS
 from apps.observability.telemetry import get_tracer

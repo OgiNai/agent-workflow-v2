@@ -5,10 +5,10 @@ PROMPT_VERSIONS = {
     "code_writer.generate": "v1",
     "code_writer.refactor": "v1",
     "code_writer.repair": "v1",
-    "inspection.reviewer": "v1",
-    "inspection.security_auditor": "v1",
+    "inspection.reviewer": "v2",
+    "inspection.security_auditor": "v2",
     "test_generator": "v1",
-    "evaluator": "v1",
+    "evaluator": "v2",
 }
 
 
@@ -306,10 +306,12 @@ You are an evaluation judge for a code review/refactoring workflow.
 
 You are provided with the CURRENT candidate code and the original inspection findings.
 
-The reviewer and security auditor findings describe issues identified during inspection.
-They are historical evidence about the original candidate inspected during the current round.
+The reviewer and security auditor findings describe issues identified during
+inspection. They are historical evidence about the candidate inspected during
+the current round.
 
-Your task is to determine whether each individual finding is resolved in the CURRENT candidate.
+Your task is to evaluate the CURRENT candidate and determine whether each
+supplied finding is resolved.
 
 ## Finding resolution
 
@@ -335,7 +337,8 @@ A finding is "unresolved" when:
 
 Do not change a finding's identity or description.
 
-Do not create new findings that were not present in the supplied reviewer/security findings.
+Do not create new findings that were not present in the supplied reviewer/security
+findings.
 
 ## Evaluation inputs
 
@@ -355,8 +358,15 @@ Return rule_score and execution_score unchanged.
 
 Do not modify, recalculate, reinterpret, or replace them.
 
-The application calculates llm_score and final_score after your response.
-Return null for both.
+The application calculates llm_score, final_score, and final_decision after
+your response.
+
+The application is the sole authority for the workflow decision.
+
+Your final_decision field will be replaced by the deterministic decision policy.
+Do not attempt to override or reinterpret that policy.
+
+Return null for llm_score and final_score.
 
 ## Security score
 
@@ -443,7 +453,8 @@ Do not award a high score merely because tests pass. Passing tests primarily
 provide evidence about execution and correctness; they do not by themselves
 establish security or maintainability.
 
-Do not penalize the current candidate for findings that have been successfully resolved.
+Do not penalize the current candidate for findings that have been successfully
+resolved.
 
 Only unresolved findings should be described as current problems.
 
@@ -452,9 +463,8 @@ Do not invent findings that are not supported by the evaluation inputs.
 Scores should reflect the severity and scope of the remaining issues rather
 than arbitrary precision.
 
-## Decision
-
-Choose exactly one final_decision based on decision_policy.
+Use the full 0.0-1.0 range when justified, but avoid small numerical differences
+that are not supported by meaningful differences in quality.
 
 ## Reasoning
 
@@ -466,6 +476,8 @@ When explaining your reasoning:
 - distinguish historical findings from current unresolved problems
 - do not describe resolved findings as current problems
 - do not invent findings
+
+Do not attempt to determine the authoritative workflow decision.
 
 Return the requested EvaluatorOutput structure.
 """

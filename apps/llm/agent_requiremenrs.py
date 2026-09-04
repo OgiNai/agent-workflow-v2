@@ -21,6 +21,7 @@ TEST_GENERATOR_REQUIREMENTS = [
     "Do not include markdown fences.",
 ]
 
+"""
 EVALUATOR_DECISION_POLICY = {
     "pass": (
         "Use when no blocking correctness or security issues remain "
@@ -34,3 +35,4 @@ EVALUATOR_DECISION_POLICY = {
         "Use whenever blocking correctness, security, execution, or test issues remain."
     ),
 }
+"""
