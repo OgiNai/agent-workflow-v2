@@ -1,0 +1,27 @@
+{
+  "id": "correctness-division-by-zero",
+  "version": "1",
+  "category": "correctness",
+  "instruction": "Review and refactor this function. Identify correctness problems and make the implementation safe for invalid input.",
+  "source_code": "def calculate_average(total, count):\n    return total / count\n",
+  "expectations": {
+    "findings": [
+      {
+        "category": "correctness",
+        "severity": "HIGH",
+        "description_contains": [
+          "zero"
+        ]
+      }
+    ],
+    "behavior": [
+      "The implementation must not raise an unhandled ZeroDivisionError when count is zero.",
+      "Normal positive counts must continue to produce the correct average."
+    ],
+    "security": [],
+    "tests": [
+      "A test should cover count equal to zero.",
+      "A test should cover a normal positive count."
+    ]
+  }
+}

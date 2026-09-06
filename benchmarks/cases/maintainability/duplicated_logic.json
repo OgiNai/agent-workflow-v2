@@ -1,0 +1,26 @@
+{
+  "id": "maintainability-duplicated-logic",
+  "version": "1",
+  "category": "maintainability",
+  "instruction": "Review and refactor this module. Focus on duplicated logic, readability, and maintainability while preserving its behavior.",
+  "source_code": "def process_user(user):\n    name = user.get(\"name\", \"\").strip().lower()\n    email = user.get(\"email\", \"\").strip().lower()\n    return {\"name\": name, \"email\": email}\n\n\ndef process_admin(admin):\n    name = admin.get(\"name\", \"\").strip().lower()\n    email = admin.get(\"email\", \"\").strip().lower()\n    return {\"name\": name, \"email\": email}\n",
+  "expectations": {
+    "findings": [
+      {
+        "category": "maintainability",
+        "severity": "MEDIUM",
+        "description_contains": [
+          "duplic"
+        ]
+      }
+    ],
+    "behavior": [
+      "Both functions must continue to normalize name and email values.",
+      "The refactoring should reduce unnecessary duplication."
+    ],
+    "security": [],
+    "tests": [
+      "Tests should cover both user and admin processing."
+    ]
+  }
+}

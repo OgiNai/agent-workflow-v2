@@ -1,0 +1,29 @@
+{
+  "id": "security-sql-injection",
+  "version": "1",
+  "category": "security",
+  "instruction": "Review and refactor this database lookup. Identify security vulnerabilities and make the query safe against malicious user input.",
+  "source_code": "import sqlite3\n\n\ndef find_user(connection, username):\n    query = \"SELECT * FROM users WHERE username = '\" + username + \"'\"\n    return connection.execute(query).fetchone()\n",
+  "expectations": {
+    "findings": [
+      {
+        "category": "security",
+        "severity": "HIGH",
+        "description_contains": [
+          "sql"
+        ]
+      }
+    ],
+    "behavior": [
+      "The username must be passed as a parameter rather than concatenated into SQL.",
+      "Normal username lookups must continue to work."
+    ],
+    "security": [
+      "The implementation must prevent SQL injection through the username parameter."
+    ],
+    "tests": [
+      "A test should verify a normal username lookup.",
+      "A test should verify malicious SQL input cannot alter the query."
+    ]
+  }
+}
