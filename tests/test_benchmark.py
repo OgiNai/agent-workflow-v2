@@ -1,18 +1,26 @@
 """Tests for the evaluation benchmark framework."""
 
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
 import pytest
 
-from apps.evals.benchmark_runner import load_benchmark_cases, match_finding_expectations
+from apps.evals.benchmark_runner import (
+    build_benchmark_report,
+    load_benchmark_cases,
+    match_finding_expectations,
+)
 from apps.schemas.agent_outputs import EvaluatorOutput, Finding
 from apps.schemas.benchmark import (
     BenchmarkCase,
+    BenchmarkCaseReport,
+    BenchmarkCaseResult,
     BenchmarkExpectations,
     BenchmarkFindingExpectation,
 )
 from apps.schemas.responses import ReviewResponse
+from apps.schemas.workflow import WorkflowStepTrace
 
 CASES_PATH = Path("benchmarks/cases")
 
@@ -219,3 +227,123 @@ def test_benchmark_categories_are_valid(category: str):
     )
 
     assert case.category == category
+
+
+def test_build_benchmark_report_contains_aggregate_metrics():
+    case = make_case([])
+
+    response = make_response([])
+
+    result = BenchmarkCaseResult(
+        case_id=case.id,
+        case_version=case.version,
+        category=case.category,
+        workflow_run_id=response.workflow_run_id,
+        response=response,
+        finding_matches=[],
+    )
+
+    started_at = datetime.now(UTC)
+    completed_at = datetime.now(UTC)
+
+    report = build_benchmark_report(
+        results=[result],
+        benchmark_run_id=uuid4(),
+        started_at=started_at,
+        completed_at=completed_at,
+        cases_path=CASES_PATH,
+    )
+
+    assert report.cases_total == 1
+    assert report.aggregate.cases_total == 1
+    assert report.aggregate.cases_passed == 1
+    assert report.aggregate.average_final_score == 1.0
+    assert report.aggregate.finding_expectation_match_rate is None
+    assert report.model.model_name
+    assert report.prompts.versions
+
+
+def test_build_benchmark_report_extracts_test_result():
+    case = make_case([])
+
+    response = make_response([]).model_copy(
+        update={
+            "steps": [
+                WorkflowStepTrace(
+                    step_name="test_runner",
+                    step_type="tool",
+                    status="success",
+                    latency_ms=25,
+                    metadata={
+                        "status": "passed",
+                        "tests_total": 2,
+                        "tests_passed": 2,
+                    },
+                )
+            ]
+        }
+    )
+
+    result = BenchmarkCaseResult(
+        case_id=case.id,
+        case_version=case.version,
+        category=case.category,
+        workflow_run_id=response.workflow_run_id,
+        response=response,
+        finding_matches=[],
+    )
+
+    report = build_benchmark_report(
+        results=[result],
+        benchmark_run_id=uuid4(),
+        started_at=datetime.now(UTC),
+        completed_at=datetime.now(UTC),
+        cases_path=CASES_PATH,
+    )
+
+    assert report.cases[0].test_result is not None
+    assert report.cases[0].test_result["status"] == "passed"
+    assert report.cases[0].duration_ms == 25
+
+
+def test_benchmark_case_report_contains_token_usage() -> None:
+    """Benchmark case reports should expose workflow token usage."""
+
+    report = BenchmarkCaseReport(
+        case_id="case-1",
+        case_version="1",
+        category="correctness",
+        workflow_run_id=uuid4(),
+        status="completed",
+        final_decision="pass",
+        rounds_executed=1,
+        findings_expected=0,
+        findings_matched=0,
+        prompt_tokens=1200,
+        completion_tokens=800,
+        total_tokens=2000,
+    )
+
+    assert report.prompt_tokens == 1200
+    assert report.completion_tokens == 800
+    assert report.total_tokens == 2000
+
+
+def test_benchmark_case_report_allows_missing_token_usage() -> None:
+    """Token usage may be unavailable for a benchmark case."""
+
+    report = BenchmarkCaseReport(
+        case_id="case-1",
+        case_version="1",
+        category="correctness",
+        workflow_run_id=uuid4(),
+        status="completed",
+        final_decision="pass",
+        rounds_executed=1,
+        findings_expected=0,
+        findings_matched=0,
+    )
+
+    assert report.prompt_tokens is None
+    assert report.completion_tokens is None
+    assert report.total_tokens is None
