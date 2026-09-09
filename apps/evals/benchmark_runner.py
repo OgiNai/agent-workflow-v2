@@ -241,6 +241,21 @@ def build_benchmark_report(
                 findings=findings,
                 test_result=test_result,
                 finding_matches=result.finding_matches,
+                prompt_tokens=sum(
+                    int(step.metadata["prompt_tokens"])
+                    for step in result.response.steps
+                    if step.metadata.get("prompt_tokens") is not None
+                ),
+                completion_tokens=sum(
+                    int(step.metadata["completion_tokens"])
+                    for step in result.response.steps
+                    if step.metadata.get("completion_tokens") is not None
+                ),
+                total_tokens=sum(
+                    int(step.metadata["total_tokens"])
+                    for step in result.response.steps
+                    if step.metadata.get("total_tokens") is not None
+                ),
             )
         )
 
@@ -284,6 +299,24 @@ def build_benchmark_report(
     total_duration_ms = sum(case.duration_ms or 0 for case in case_reports)
 
     cases_total = len(case_reports)
+
+    prompt_tokens = [
+        int(step.metadata["prompt_tokens"])
+        for step in result.response.steps
+        if step.metadata.get("prompt_tokens") is not None
+    ]
+
+    completion_tokens = [
+        int(step.metadata["completion_tokens"])
+        for step in result.response.steps
+        if step.metadata.get("completion_tokens") is not None
+    ]
+
+    total_tokens = [
+        int(step.metadata["total_tokens"])
+        for step in result.response.steps
+        if step.metadata.get("total_tokens") is not None
+    ]
 
     aggregate = BenchmarkAggregateMetrics(
         cases_total=cases_total,
@@ -340,6 +373,17 @@ def build_benchmark_report(
         total_duration_ms=total_duration_ms,
         average_case_duration_ms=(
             round(total_duration_ms / cases_total, 1) if cases_total else None
+        ),
+        average_prompt_tokens=(
+            round(sum(prompt_tokens) / len(prompt_tokens), 1) if prompt_tokens else None
+        ),
+        average_completion_tokens=(
+            round(sum(completion_tokens) / len(completion_tokens), 1)
+            if completion_tokens
+            else None
+        ),
+        average_total_tokens=(
+            round(sum(total_tokens) / len(total_tokens), 1) if total_tokens else None
         ),
     )
 

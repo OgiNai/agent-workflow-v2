@@ -329,21 +329,64 @@ def test_benchmark_case_report_contains_token_usage() -> None:
     assert report.total_tokens == 2000
 
 
-def test_benchmark_case_report_allows_missing_token_usage() -> None:
-    """Token usage may be unavailable for a benchmark case."""
-
-    report = BenchmarkCaseReport(
-        case_id="case-1",
-        case_version="1",
-        category="correctness",
+def test_benchmark_report_averages_token_usage() -> None:
+    response = ReviewResponse(
         workflow_run_id=uuid4(),
+        task_type="review_refactor",
+        source_type="inline_code",
+        summary="none",
         status="completed",
         final_decision="pass",
         rounds_executed=1,
-        findings_expected=0,
-        findings_matched=0,
+        steps=[
+            WorkflowStepTrace(
+                step_name="reviewer",
+                step_type="agent",
+                status="success",
+                metadata={
+                    "prompt_tokens": 100,
+                    "completion_tokens": 50,
+                    "total_tokens": 150,
+                },
+            ),
+            WorkflowStepTrace(
+                step_name="security_auditor",
+                step_type="agent",
+                status="success",
+                metadata={
+                    "prompt_tokens": 200,
+                    "completion_tokens": 100,
+                    "total_tokens": 300,
+                },
+            ),
+        ],
     )
 
-    assert report.prompt_tokens is None
-    assert report.completion_tokens is None
-    assert report.total_tokens is None
+    result = BenchmarkCaseResult(
+        case_id="token-test",
+        case_version="1.0",
+        category="correctness",
+        workflow_run_id=uuid4(),
+        response=response,
+        findings_total=0,
+        findings_passed=0,
+        finding_matches=[],
+    )
+
+    report = build_benchmark_report(
+        results=[result],
+        benchmark_run_id=uuid4(),
+        started_at=datetime(2026, 1, 1, tzinfo=UTC),
+        completed_at=datetime(2026, 1, 1, 0, 0, 1, tzinfo=UTC),
+        cases_path=Path("benchmarks/cases"),
+    )
+
+    case = report.cases[0]
+
+    assert case.prompt_tokens == 300
+    assert case.completion_tokens == 150
+    assert case.total_tokens == 450
+
+    assert report.aggregate.average_prompt_tokens == 150.0
+    assert report.aggregate.average_completion_tokens == 75.0
+    assert report.aggregate.average_total_tokens == 225.0
