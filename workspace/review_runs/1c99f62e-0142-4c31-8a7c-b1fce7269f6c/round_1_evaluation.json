@@ -1,0 +1,40 @@
+{
+  "final_decision": "retry",
+  "rule_score": 0.75,
+  "execution_score": 0.0,
+  "llm_score": 0.5,
+  "security_score": 1.0,
+  "maintainability_score": 0.5,
+  "correctness_score": 0.0,
+  "final_score": 0.338,
+  "findings": [
+    {
+      "id": "finding_747510b14b148eeb",
+      "category": "correctness",
+      "severity": "CRITICAL",
+      "description": "The function does not check if 'count' is zero, leading to a ZeroDivisionError when an empty set is provided.",
+      "status": "resolved"
+    },
+    {
+      "id": "finding_9502654e2042dccd",
+      "category": "maintainability",
+      "severity": "LOW",
+      "description": "The function lacks type hints, making it difficult to enforce expected numeric inputs.",
+      "status": "resolved"
+    },
+    {
+      "id": "finding_19d669e988e57d51",
+      "category": "correctness",
+      "severity": "HIGH",
+      "description": "The function does not handle the case where 'count' is zero, which will raise a ZeroDivisionError and crash the application.",
+      "status": "resolved"
+    }
+  ],
+  "reasons": [
+    "The logic within the function correctly addresses the ZeroDivisionError by checking if count is zero.",
+    "The function now includes appropriate type hints.",
+    "The candidate code failed to execute due to a SyntaxError caused by placing multiple statements on a single line, which is invalid Python syntax for function definitions.",
+    "While the logic is now correct, the implementation is currently non-functional due to the syntax error."
+  ],
+  "retry_feedback": "The implementation logic is correct, but the code contains a SyntaxError because multiple statements are placed on the same line. Please format the function body across multiple lines to ensure it is valid Python code."
+}

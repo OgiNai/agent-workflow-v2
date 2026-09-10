@@ -1,0 +1,33 @@
+{
+  "final_decision": "retry",
+  "rule_score": 0.75,
+  "execution_score": 0.0,
+  "llm_score": 0.825,
+  "security_score": 1.0,
+  "maintainability_score": 1.0,
+  "correctness_score": 0.5,
+  "final_score": 0.435,
+  "findings": [
+    {
+      "id": "finding_0ae18020c214eb40",
+      "category": "security",
+      "severity": "CRITICAL",
+      "description": "The function uses string concatenation to build a SQL query, allowing an attacker to execute arbitrary SQL commands via the 'username' parameter.",
+      "status": "resolved"
+    },
+    {
+      "id": "finding_da099052e5fc2d22",
+      "category": "security",
+      "severity": "CRITICAL",
+      "description": "The function uses string concatenation to build a SQL query, which makes it vulnerable to SQL injection attacks. An attacker can manipulate the 'username' input to execute arbitrary SQL commands.",
+      "status": "resolved"
+    }
+  ],
+  "reasons": [
+    "The candidate code successfully implements parameterized queries, which resolves the identified SQL injection vulnerabilities.",
+    "The security findings are marked as resolved because the code no longer uses string concatenation for SQL construction.",
+    "The execution score is 0.0 due to a syntax error in the provided test suite, not the candidate code itself. The candidate code appears syntactically correct and logically sound.",
+    "The maintainability score is high as the code is clean, typed, and follows standard Python practices for database interactions."
+  ],
+  "retry_feedback": null
+}

@@ -793,38 +793,186 @@ Provide comparison of benchmark runs across:
 
 ---
 
-## Milestone 5
+## Milestone 5 — Agentic Planning
 
-GitHub Integration.
+**Goal:** Replace the current deterministic Planner with an LLM-based planning agent while preserving the existing workflow contracts, validation boundaries, retry behavior, observability, and evaluation architecture.
 
-Implement
+### 5.1 LLM Planner Design
 
-- repository cloning
-- PR review
-- branch analysis
-- commit review
+* Define the Planner's responsibilities and boundaries.
+* Define the structured planning output consumed by `CodeWorkflow`.
+* Decide which workflow decisions should be delegated to the LLM and which remain deterministic application policy.
+* Define the Planner prompt and version it alongside the existing agent prompts.
+* Define the model configuration used by the Planner.
+* Ensure the Planner cannot directly execute tools or mutate workflow state.
 
-### Planner upgrade
+### 5.2 Structured Planner Output
 
-Replace the deterministic PlannerAgent with an LLM-powered planner.
+* Introduce Pydantic schemas for Planner input/output.
+* Represent the selected workflow/task strategy explicitly.
+* Validate all LLM-generated Planner output before it reaches the workflow.
+* Handle malformed, incomplete, or unexpected LLM responses safely.
+* Ensure unsupported planning decisions fall back to deterministic application behavior where appropriate.
 
-Goals:
-- Decide execution plan from user intent.
-- Produce structured PlannerOutput.
-- Determine whether generation is required.
-- Decide which workflow stages should execute.
-- Support future extensibility (documentation generation, linting, dependency updates, etc.).
+### 5.3 Planner Agent Implementation
 
-Requirements:
-- Preserve the existing PlannerOutput schema.
-- Planner must be deterministic through structured output.
-- Add prompt and evaluation tests.
-- Add observability for planner reasoning and latency.
-- Keep the deterministic planner available behind a feature flag for testing.
+* Implement the Planner as an LLM-backed agent using the existing LLM abstraction.
+* Integrate token usage and prompt-version tracking with the existing observability infrastructure.
+* Preserve retry/error handling conventions used by other LLM agents.
+* Keep provider/model-specific implementation details outside the workflow orchestration layer.
+
+### 5.4 Workflow Integration
+
+* Replace the current deterministic planning decision with the LLM Planner.
+* Preserve the existing workflow sequence and retry semantics.
+* Ensure Planner output determines strategy rather than bypassing safety, security, testing, or evaluation stages.
+* Verify both major paths:
+
+  * review/refactor
+  * feature/code generation
+* Ensure invalid Planner output cannot cause uncontrolled workflow behavior.
+
+### 5.5 Planner Evaluation
+
+* Extend benchmark cases where necessary to test planning decisions.
+* Add expectations for Planner behavior where deterministic validation is possible.
+* Measure Planner impact on:
+
+  * correctness
+  * security
+  * maintainability
+  * execution success
+  * token usage
+  * execution duration
+* Verify that introducing non-deterministic planning does not degrade existing benchmark performance.
+* Document known sources of LLM variance.
+
+### 5.6 Planner Failure and Fallback Strategy
+
+* Define behavior for LLM timeout, provider errors, malformed output, and unavailable model.
+* Ensure a Planner failure produces a controlled workflow outcome.
+* Define when deterministic fallback is appropriate versus when the workflow should fail.
+* Add automated tests for failure and fallback scenarios.
+
+### 5.7 Milestone Validation
+
+* Run the complete test suite.
+* Run the benchmark suite using the new Planner.
+* Compare results against the pre-LLM Planner baseline.
+* Verify persisted workflow traces and token usage.
+* Verify OpenTelemetry traces remain correctly associated with Planner execution.
+* Confirm that existing API behavior remains compatible unless intentionally changed.
+
+**Outcome:** The workflow has a production-oriented LLM Planner that makes structured planning decisions while deterministic application logic continues to enforce workflow safety, validation, retry, and evaluation policies.
 
 ---
 
-## Milestone 6
+## Milestone 6 — GitHub Integration
+
+**Goal:** Integrate the workflow with GitHub repositories while keeping GitHub-specific concerns isolated from the core workflow and domain logic.
+
+### 6.1 GitHub Integration Architecture
+
+* Define GitHub as an external adapter around the existing workflow.
+* Keep `CodeWorkflow` independent of GitHub APIs.
+* Define the boundary between:
+
+  * GitHub repository data
+  * application/domain models
+  * `ReviewRequest`
+  * `ReviewResponse`
+* Decide which GitHub operations belong in the initial MVP and which are deferred.
+* Define security and permission boundaries before implementation.
+
+### 6.2 GitHub Authentication
+
+* Select the authentication mechanism appropriate for the MVP.
+* Store GitHub credentials/tokens through the existing application configuration and secret-management approach.
+* Never expose credentials through API responses, logs, traces, benchmark reports, or persisted workflow data.
+* Define the minimum GitHub permissions required by the application.
+* Add configuration validation and failure handling for missing/invalid credentials.
+
+### 6.3 Repository and File Access
+
+* Implement a GitHub client/adapter for repository access.
+* Support retrieving source files from a repository.
+* Validate repository, branch/ref, and file-path inputs.
+* Apply the existing project file/path security policies where applicable.
+* Handle GitHub API errors, missing repositories/files, unsupported files, and rate limits.
+* Avoid coupling GitHub response models directly to internal workflow schemas.
+
+### 6.4 GitHub → Workflow Integration
+
+* Convert GitHub source content into the existing `ReviewRequest`.
+* Reuse the existing review/refactor workflow rather than creating a separate GitHub workflow.
+* Preserve the existing Planner → Reviewer → Security Auditor → CodeWriter → Test Generator → Test Runner → Evaluator flow.
+* Record sufficient source/repository metadata to identify the origin of a workflow run without storing unnecessary external data.
+* Ensure GitHub-specific failures are distinguishable from workflow/LLM failures.
+
+### 6.5 Review Result Presentation
+
+* Define how `ReviewResponse` is mapped back to GitHub concepts.
+* Support an initial read-only review result flow before modifying repositories.
+* Determine how findings, severity, descriptions, and suggested changes should be represented.
+* Ensure generated output remains understandable in a GitHub developer workflow.
+* Preserve the existing API response independently of the GitHub presentation layer.
+
+### 6.6 Pull Request Integration
+
+* Extend the adapter to support pull-request-based reviews.
+* Retrieve relevant changed files from a pull request.
+* Run the existing workflow against the selected changes.
+* Determine how findings should be associated with changed files/lines where technically feasible.
+* Support publishing review results as GitHub PR comments or review feedback.
+* Define safeguards preventing accidental repository modifications or unintended PR actions.
+
+### 6.7 GitHub Write Operations
+
+* If code changes are enabled, explicitly separate:
+
+  * generated/refactored code
+  * proposed repository changes
+  * actual GitHub write operations
+* Define whether the MVP creates commits, branches, or pull requests.
+* Require explicit application-level authorization for write operations.
+* Ensure failed write operations cannot leave the workflow in an inconsistent state.
+* Record external operation results in workflow observability.
+
+### 6.8 GitHub Error Handling and Resilience
+
+* Handle authentication failures.
+* Handle repository/file/PR not found errors.
+* Handle permission errors.
+* Handle GitHub API rate limits.
+* Handle transient GitHub API failures.
+* Define retry behavior for external API calls separately from LLM/workflow retries.
+* Ensure external failures are observable and diagnosable.
+
+### 6.9 GitHub Integration Testing
+
+* Add unit tests for GitHub adapter behavior.
+* Test conversion between GitHub data and internal workflow models.
+* Test authentication and error handling.
+* Mock GitHub API interactions rather than depending on live GitHub calls for normal CI tests.
+* Add integration tests against GitHub only if appropriate credentials and environment configuration are available.
+* Verify that the core workflow remains testable without GitHub.
+
+### 6.10 Milestone Validation
+
+* Execute a complete review against a real GitHub repository/file.
+* Verify the resulting `ReviewResponse`.
+* Verify workflow persistence and observability.
+* Verify token usage and timing remain recorded.
+* Verify GitHub operations are represented clearly in logs/traces without exposing credentials.
+* Run the complete automated test suite.
+* Document the supported GitHub workflow and known limitations.
+
+**Outcome:** GitHub becomes a real external integration layer for the platform without coupling GitHub-specific logic to the core AI workflow, allowing the same workflow to operate through the existing API and through GitHub.
+
+
+---
+
+## Milestone 7
 
 Production API.
 
@@ -838,7 +986,7 @@ Implement
 
 ---
 
-## Milestone 7
+## Milestone 8
 
 Deployment.
 
@@ -852,7 +1000,62 @@ Implement
 
 ---
 
-## Milestone 8
+## Milestone 9 — Evaluation & Benchmarking Maturity
+
+Goal:
+Strengthen the evaluation framework so benchmark results can distinguish
+real system improvements from stochastic LLM variation and provide
+statistically meaningful performance comparisons.
+
+### 9.1 Repeated Benchmark Runs
+- Support executing the same benchmark configuration multiple times.
+- Allow configurable number of repetitions.
+- Preserve each individual benchmark run/report.
+- Aggregate repeated runs into a single experiment result.
+
+### 9.2 Statistical Benchmark Metrics
+- Calculate mean, minimum, maximum, and standard deviation for key metrics.
+- Track score distributions across repeated runs.
+- Aggregate token usage and execution duration across runs.
+- Report per-category statistics where useful.
+
+### 9.3 Baseline vs Candidate Experiments
+- Introduce the concept of a benchmark experiment containing:
+  - baseline configuration
+  - candidate configuration
+  - repeated runs for each configuration
+- Compare aggregate distributions rather than individual runs.
+- Report absolute and relative improvements.
+
+### 9.4 Statistical Significance
+- Evaluate whether observed differences are likely to represent
+  meaningful improvements rather than LLM stochastic variation.
+- Add appropriate statistical tests where justified.
+- Avoid over-interpreting small benchmark differences.
+
+### 9.5 Benchmark Reproducibility
+- Record all configuration required to reproduce an experiment:
+  - model
+  - temperature
+  - prompt versions
+  - benchmark case version
+  - workflow configuration
+  - repetition count
+- Ensure benchmark reports remain self-contained and versioned.
+
+### 9.6 Evaluation Visualization
+- Add lightweight visualization of benchmark results where useful.
+- Support comparison of score distributions, token usage, and duration.
+- Keep visualization separate from the core evaluation engine.
+
+### 9.7 Evaluation Regression Detection
+- Define thresholds for detecting meaningful regressions.
+- Support automated benchmark checks in CI/CD for selected benchmark suites.
+- Fail or warn when candidate performance falls below configured thresholds.
+
+---
+
+## Milestone 10
 
 Portfolio Polish.
 

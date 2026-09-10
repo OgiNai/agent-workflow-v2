@@ -1,0 +1,1 @@
+def calculate_average(total: float, count: int) -> float: """Calculates the average, returning 0.0 if count is zero.""" if count == 0: return 0.0 return float(total / count)

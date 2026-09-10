@@ -1,0 +1,441 @@
+{
+  "report_version": "1",
+  "benchmark_run_id": "65159878-66cd-4577-9d3a-f8adbd733ceb",
+  "started_at": "2026-09-10T10:18:53.081378Z",
+  "completed_at": "2026-09-10T10:20:34.850462Z",
+  "duration_ms": 101769,
+  "cases_path": "benchmarks/cases",
+  "cases_total": 4,
+  "model": {
+    "model_name": "gemini-3.1-flash-lite",
+    "temperature": 0.2,
+    "attempts": 3,
+    "initial_delay": 5.0
+  },
+  "prompts": {
+    "versions": {
+      "planner": "v1",
+      "code_writer.generate": "v1",
+      "code_writer.refactor": "v1",
+      "code_writer.repair": "v1",
+      "inspection.reviewer": "v2",
+      "inspection.security_auditor": "v2",
+      "test_generator": "v1",
+      "evaluator": "v2"
+    }
+  },
+  "cases": [
+    {
+      "case_id": "correctness-division-by-zero",
+      "case_version": "1",
+      "category": "correctness",
+      "workflow_run_id": "9fbb8364-8591-4cda-98f9-ce035303f5c8",
+      "status": "completed_with_warnings",
+      "final_decision": "unresolved",
+      "rounds_executed": 1,
+      "duration_ms": 17575,
+      "final_score": 0.341,
+      "rule_score": 0.75,
+      "execution_score": 0.0,
+      "llm_score": 0.512,
+      "correctness_score": 0.25,
+      "security_score": 1.0,
+      "maintainability_score": 0.25,
+      "findings_expected": 1,
+      "findings_matched": 1,
+      "finding_resolution_rate": 1.0,
+      "findings": [
+        {
+          "id": "finding_747510b14b148eeb",
+          "category": "correctness",
+          "severity": "CRITICAL",
+          "description": "The function does not check if 'count' is zero, leading to a ZeroDivisionError when an empty set is provided.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_9502654e2042dccd",
+          "category": "maintainability",
+          "severity": "LOW",
+          "description": "The function lacks type hints, making it difficult to enforce expected numeric inputs.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_98303b04ee3a9919",
+          "category": "correctness",
+          "severity": "HIGH",
+          "description": "The function does not handle the case where 'count' is zero, which will raise a ZeroDivisionError exception.",
+          "status": "resolved"
+        }
+      ],
+      "prompt_tokens": 4104,
+      "completion_tokens": 1330,
+      "total_tokens": 5434,
+      "test_result": {
+        "status": "failed",
+        "tests_total": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "tests_skipped": 0,
+        "tests_xfailed": 0,
+        "tests_xpassed": 0,
+        "duration_ms": 2027,
+        "exit_code": 2,
+        "tests": [],
+        "stdout": "\n==================================== ERRORS ====================================\n______________________ ERROR collecting test_solution.py _______________________\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/python.py:508: in importtestmodule\n    mod = import_path(\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/pathlib.py:596: in import_path\n    importlib.import_module(module_name)\n/usr/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<frozen importlib._bootstrap>:1206: in _gcd_import\n    ???\n<frozen importlib._bootstrap>:1178: in _find_and_load\n    ???\n<frozen importlib._bootstrap>:1149: in _find_and_load_unlocked\n    ???\n<frozen importlib._bootstrap>:690: in _load_unlocked\n    ???\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/assertion/rewrite.py:188: in exec_module\n    exec(co, module.__dict__)\ntest_solution.py:2: in <module>\n    from solution import calculate_average\nE     File \"/tmp/agent_review_tests_w7slwdii/solution.py\", line 1\nE       def calculate_average(total: float, count: int) -> float:\"\"\"Calculates the average of a total given a count. Returns 0.0 if count is 0.\"\"\"if count == 0:return 0.0return float(total / count)\nE                                                                                                                                                                        ^\nE   SyntaxError: invalid decimal literal\n=========================== short test summary info ============================\nERROR test_solution.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.60s\n",
+        "stderr": ""
+      },
+      "finding_matches": [
+        {
+          "expectation": {
+            "category": "correctness",
+            "severity": "HIGH",
+            "description_contains": [
+              "zero"
+            ]
+          },
+          "matched_finding_id": "finding_98303b04ee3a9919",
+          "matched_description": "The function does not handle the case where 'count' is zero, which will raise a ZeroDivisionError exception.",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "case_id": "maintainability-duplicated-logic",
+      "case_version": "1",
+      "category": "maintainability",
+      "workflow_run_id": "62b3a848-f2be-4026-899e-b03dedbb7fee",
+      "status": "completed",
+      "final_decision": "pass",
+      "rounds_executed": 1,
+      "duration_ms": 16961,
+      "final_score": 0.938,
+      "rule_score": 0.75,
+      "execution_score": 1.0,
+      "llm_score": 1.0,
+      "correctness_score": 1.0,
+      "security_score": 1.0,
+      "maintainability_score": 1.0,
+      "findings_expected": 1,
+      "findings_matched": 0,
+      "finding_resolution_rate": 1.0,
+      "findings": [
+        {
+          "id": "finding_4258e7e224198048",
+          "category": "maintainability",
+          "severity": "LOW",
+          "description": "The functions process_user and process_admin contain identical logic, leading to code duplication.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_88729571e74bfe31",
+          "category": "maintainability",
+          "severity": "LOW",
+          "description": "Code duplication detected: process_user and process_admin perform identical logic for data normalization, violating the DRY (Don't Repeat Yourself) principle.",
+          "status": "resolved"
+        }
+      ],
+      "prompt_tokens": 6960,
+      "completion_tokens": 1869,
+      "total_tokens": 8829,
+      "test_result": {
+        "status": "passed",
+        "tests_total": 6,
+        "tests_passed": 6,
+        "tests_failed": 0,
+        "tests_skipped": 0,
+        "tests_xfailed": 0,
+        "tests_xpassed": 0,
+        "duration_ms": 1443,
+        "exit_code": 0,
+        "tests": [
+          {
+            "nodeid": "test_solution.py::test_normalize_user_data_standard",
+            "outcome": "passed",
+            "duration_ms": 3,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_normalize_user_data_missing_keys",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_normalize_user_data_non_string_types",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_process_user_behavior",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_process_admin_behavior",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_normalize_user_data_whitespace_only",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          }
+        ],
+        "stdout": "......                                                                   [100%]\n6 passed in 0.06s\n",
+        "stderr": ""
+      },
+      "finding_matches": [
+        {
+          "expectation": {
+            "category": "maintainability",
+            "severity": "MEDIUM",
+            "description_contains": [
+              "duplic"
+            ]
+          },
+          "matched_finding_id": null,
+          "matched_description": null,
+          "matched": false
+        }
+      ]
+    },
+    {
+      "case_id": "security-hardcoded-secret",
+      "case_version": "1",
+      "category": "security",
+      "workflow_run_id": "9c7b4214-4522-4f17-9b68-7f4dbea82110",
+      "status": "completed",
+      "final_decision": "pass",
+      "rounds_executed": 1,
+      "duration_ms": 16279,
+      "final_score": 0.928,
+      "rule_score": 0.75,
+      "execution_score": 1.0,
+      "llm_score": 0.97,
+      "correctness_score": 1.0,
+      "security_score": 1.0,
+      "maintainability_score": 0.9,
+      "findings_expected": 1,
+      "findings_matched": 0,
+      "finding_resolution_rate": 1.0,
+      "findings": [
+        {
+          "id": "finding_565079c9921313b4",
+          "category": "security",
+          "severity": "CRITICAL",
+          "description": "Hardcoded API key found in source code. This exposes the credential to anyone with access to the repository.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_3ffb848e5224ad0d",
+          "category": "maintainability",
+          "severity": "MEDIUM",
+          "description": "Lack of environment-based configuration management. The application does not support externalized configuration, making it difficult to rotate keys or use different environments.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_d41e599106d67ba6",
+          "category": "security",
+          "severity": "CRITICAL",
+          "description": "Hardcoded API secret detected in source code. This exposes sensitive credentials to version control systems and unauthorized users.",
+          "status": "resolved"
+        }
+      ],
+      "prompt_tokens": 6549,
+      "completion_tokens": 1744,
+      "total_tokens": 8293,
+      "test_result": {
+        "status": "passed",
+        "tests_total": 4,
+        "tests_passed": 4,
+        "tests_failed": 0,
+        "tests_skipped": 0,
+        "tests_xfailed": 0,
+        "tests_xpassed": 0,
+        "duration_ms": 1369,
+        "exit_code": 0,
+        "tests": [
+          {
+            "nodeid": "test_solution.py::test_get_api_key_success",
+            "outcome": "passed",
+            "duration_ms": 3,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_get_api_key_missing",
+            "outcome": "passed",
+            "duration_ms": 3,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_get_headers_success",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_get_headers_failure",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          }
+        ],
+        "stdout": "....                                                                     [100%]\n4 passed in 0.05s\n",
+        "stderr": ""
+      },
+      "finding_matches": [
+        {
+          "expectation": {
+            "category": "security",
+            "severity": "HIGH",
+            "description_contains": [
+              "secret"
+            ]
+          },
+          "matched_finding_id": null,
+          "matched_description": null,
+          "matched": false
+        }
+      ]
+    },
+    {
+      "case_id": "security-sql-injection",
+      "case_version": "1",
+      "category": "security",
+      "workflow_run_id": "09bacaf6-e6d7-437e-ab92-a4ac087742a9",
+      "status": "completed",
+      "final_decision": "pass",
+      "rounds_executed": 1,
+      "duration_ms": 15775,
+      "final_score": 0.938,
+      "rule_score": 0.75,
+      "execution_score": 1.0,
+      "llm_score": 1.0,
+      "correctness_score": 1.0,
+      "security_score": 1.0,
+      "maintainability_score": 1.0,
+      "findings_expected": 1,
+      "findings_matched": 0,
+      "finding_resolution_rate": 1.0,
+      "findings": [
+        {
+          "id": "finding_198be363c0be899c",
+          "category": "security",
+          "severity": "CRITICAL",
+          "description": "The function uses string concatenation to build a SQL query, allowing an attacker to inject arbitrary SQL commands via the 'username' parameter.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_8d674e7700a36515",
+          "category": "security",
+          "severity": "CRITICAL",
+          "description": "The function uses string concatenation to build a SQL query with user-provided input, which allows for SQL injection attacks.",
+          "status": "resolved"
+        }
+      ],
+      "prompt_tokens": 6324,
+      "completion_tokens": 1731,
+      "total_tokens": 8055,
+      "test_result": {
+        "status": "passed",
+        "tests_total": 5,
+        "tests_passed": 5,
+        "tests_failed": 0,
+        "tests_skipped": 0,
+        "tests_xfailed": 0,
+        "tests_xpassed": 0,
+        "duration_ms": 1534,
+        "exit_code": 0,
+        "tests": [
+          {
+            "nodeid": "test_solution.py::test_find_user_success",
+            "outcome": "passed",
+            "duration_ms": 7,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_find_user_not_found",
+            "outcome": "passed",
+            "duration_ms": 5,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_find_user_sql_injection_attempt",
+            "outcome": "passed",
+            "duration_ms": 7,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_find_user_empty_string",
+            "outcome": "passed",
+            "duration_ms": 3,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_find_user_special_characters",
+            "outcome": "passed",
+            "duration_ms": 6,
+            "failure_message": null,
+            "traceback": null
+          }
+        ],
+        "stdout": ".....                                                                    [100%]\n5 passed in 0.08s\n",
+        "stderr": ""
+      },
+      "finding_matches": [
+        {
+          "expectation": {
+            "category": "security",
+            "severity": "HIGH",
+            "description_contains": [
+              "sql"
+            ]
+          },
+          "matched_finding_id": null,
+          "matched_description": null,
+          "matched": false
+        }
+      ]
+    }
+  ],
+  "aggregate": {
+    "cases_total": 4,
+    "cases_passed": 3,
+    "cases_passed_with_warnings": 0,
+    "cases_retry": 0,
+    "cases_failed": 0,
+    "average_final_score": 0.786,
+    "average_rule_score": 0.75,
+    "average_execution_score": 0.75,
+    "average_llm_score": 0.871,
+    "average_correctness_score": 0.812,
+    "average_security_score": 1.0,
+    "average_maintainability_score": 0.787,
+    "finding_resolution_rate": 1.0,
+    "finding_expectation_match_rate": 0.25,
+    "retry_rate": 0.0,
+    "average_prompt_tokens": 5984.2,
+    "average_completion_tokens": 1668.5,
+    "average_total_tokens": 7652.8,
+    "total_duration_ms": 66590,
+    "average_case_duration_ms": 16647.5
+  }
+}

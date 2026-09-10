@@ -1,0 +1,57 @@
+{
+  "status": "passed",
+  "tests_total": 6,
+  "tests_passed": 6,
+  "tests_failed": 0,
+  "tests_skipped": 0,
+  "tests_xfailed": 0,
+  "tests_xpassed": 0,
+  "duration_ms": 1401,
+  "exit_code": 0,
+  "tests": [
+    {
+      "nodeid": "test_solution.py::test_calculate_average_positive_integers",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_calculate_average_floats",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_calculate_average_zero_total",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_calculate_average_negative_numbers",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_calculate_average_zero_count_raises_error",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_calculate_average_invalid_types",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    }
+  ],
+  "stdout": "......                                                                   [100%]\n6 passed in 0.07s\n",
+  "stderr": ""
+}

@@ -1,0 +1,14 @@
+{
+  "status": "failed",
+  "tests_total": 0,
+  "tests_passed": 0,
+  "tests_failed": 0,
+  "tests_skipped": 0,
+  "tests_xfailed": 0,
+  "tests_xpassed": 0,
+  "duration_ms": 3372,
+  "exit_code": 2,
+  "tests": [],
+  "stdout": "\n==================================== ERRORS ====================================\n______________________ ERROR collecting test_solution.py _______________________\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/python.py:508: in importtestmodule\n    mod = import_path(\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/pathlib.py:596: in import_path\n    importlib.import_module(module_name)\n/usr/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<frozen importlib._bootstrap>:1206: in _gcd_import\n    ???\n<frozen importlib._bootstrap>:1178: in _find_and_load\n    ???\n<frozen importlib._bootstrap>:1149: in _find_and_load_unlocked\n    ???\n<frozen importlib._bootstrap>:690: in _load_unlocked\n    ???\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/assertion/rewrite.py:179: in exec_module\n    source_stat, co = _rewrite_test(fn, self.config)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/assertion/rewrite.py:348: in _rewrite_test\n    tree = ast.parse(source, filename=strfn)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/lib/python3.11/ast.py:50: in parse\n    return compile(source, filename, mode, flags,\nE     File \"/tmp/agent_review_tests_ot134_pq/test_solution.py\", line 1\nE       user; drop table users;'\nE                      ^^^^^^\nE   SyntaxError: invalid syntax\n=========================== short test summary info ============================\nERROR test_solution.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.99s\n",
+  "stderr": ""
+}

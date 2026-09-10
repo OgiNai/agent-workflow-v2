@@ -1,0 +1,441 @@
+{
+  "report_version": "1",
+  "benchmark_run_id": "72043670-6dca-4a69-a14c-0bdd96a98f88",
+  "started_at": "2026-09-10T10:22:58.972363Z",
+  "completed_at": "2026-09-10T10:24:34.393764Z",
+  "duration_ms": 95421,
+  "cases_path": "benchmarks/cases",
+  "cases_total": 4,
+  "model": {
+    "model_name": "gemini-3.1-flash-lite",
+    "temperature": 0.2,
+    "attempts": 3,
+    "initial_delay": 5.0
+  },
+  "prompts": {
+    "versions": {
+      "planner": "v1",
+      "code_writer.generate": "v1",
+      "code_writer.refactor": "v1",
+      "code_writer.repair": "v1",
+      "inspection.reviewer": "v2",
+      "inspection.security_auditor": "v2",
+      "test_generator": "v1",
+      "evaluator": "v2"
+    }
+  },
+  "cases": [
+    {
+      "case_id": "correctness-division-by-zero",
+      "case_version": "1",
+      "category": "correctness",
+      "workflow_run_id": "c22d53cf-31e7-4512-ae5b-401a28faf4da",
+      "status": "completed",
+      "final_decision": "pass",
+      "rounds_executed": 1,
+      "duration_ms": 14293,
+      "final_score": 0.938,
+      "rule_score": 0.75,
+      "execution_score": 1.0,
+      "llm_score": 1.0,
+      "correctness_score": 1.0,
+      "security_score": 1.0,
+      "maintainability_score": 1.0,
+      "findings_expected": 1,
+      "findings_matched": 1,
+      "finding_resolution_rate": 1.0,
+      "findings": [
+        {
+          "id": "finding_747510b14b148eeb",
+          "category": "correctness",
+          "severity": "CRITICAL",
+          "description": "The function does not check if 'count' is zero, leading to a ZeroDivisionError when an empty set is provided.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_8fd4fe4a0fc4943f",
+          "category": "maintainability",
+          "severity": "LOW",
+          "description": "The function lacks type hints, making it difficult to enforce expected numeric input types.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_19d669e988e57d51",
+          "category": "correctness",
+          "severity": "HIGH",
+          "description": "The function does not handle the case where 'count' is zero, which will raise a ZeroDivisionError and crash the application.",
+          "status": "resolved"
+        }
+      ],
+      "prompt_tokens": 3985,
+      "completion_tokens": 1302,
+      "total_tokens": 5287,
+      "test_result": {
+        "status": "passed",
+        "tests_total": 6,
+        "tests_passed": 6,
+        "tests_failed": 0,
+        "tests_skipped": 0,
+        "tests_xfailed": 0,
+        "tests_xpassed": 0,
+        "duration_ms": 1401,
+        "exit_code": 0,
+        "tests": [
+          {
+            "nodeid": "test_solution.py::test_calculate_average_positive_integers",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_calculate_average_floats",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_calculate_average_zero_total",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_calculate_average_negative_numbers",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_calculate_average_zero_count_raises_error",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_calculate_average_invalid_types",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          }
+        ],
+        "stdout": "......                                                                   [100%]\n6 passed in 0.07s\n",
+        "stderr": ""
+      },
+      "finding_matches": [
+        {
+          "expectation": {
+            "category": "correctness",
+            "severity": "HIGH",
+            "description_contains": [
+              "zero"
+            ]
+          },
+          "matched_finding_id": "finding_19d669e988e57d51",
+          "matched_description": "The function does not handle the case where 'count' is zero, which will raise a ZeroDivisionError and crash the application.",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "case_id": "maintainability-duplicated-logic",
+      "case_version": "1",
+      "category": "maintainability",
+      "workflow_run_id": "273a9269-369b-473a-8d5e-7654503f115e",
+      "status": "completed",
+      "final_decision": "pass",
+      "rounds_executed": 1,
+      "duration_ms": 16060,
+      "final_score": 0.938,
+      "rule_score": 0.75,
+      "execution_score": 1.0,
+      "llm_score": 1.0,
+      "correctness_score": 1.0,
+      "security_score": 1.0,
+      "maintainability_score": 1.0,
+      "findings_expected": 1,
+      "findings_matched": 0,
+      "finding_resolution_rate": 1.0,
+      "findings": [
+        {
+          "id": "finding_db62d66ef6287799",
+          "category": "maintainability",
+          "severity": "LOW",
+          "description": "The functions process_user and process_admin contain identical implementation logic, leading to unnecessary code duplication.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_9867cbed0f8305e7",
+          "category": "maintainability",
+          "severity": "LOW",
+          "description": "Code duplication detected: process_user and process_admin perform identical logic for data sanitization, violating the DRY (Don't Repeat Yourself) principle.",
+          "status": "resolved"
+        }
+      ],
+      "prompt_tokens": 6849,
+      "completion_tokens": 1864,
+      "total_tokens": 8713,
+      "test_result": {
+        "status": "passed",
+        "tests_total": 6,
+        "tests_passed": 6,
+        "tests_failed": 0,
+        "tests_skipped": 0,
+        "tests_xfailed": 0,
+        "tests_xpassed": 0,
+        "duration_ms": 1370,
+        "exit_code": 0,
+        "tests": [
+          {
+            "nodeid": "test_solution.py::test_normalize_user_data_normal",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_normalize_user_data_missing_keys",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_normalize_user_data_non_string_types",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_process_user",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_process_admin",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_normalize_user_data_extra_keys_ignored",
+            "outcome": "passed",
+            "duration_ms": 2,
+            "failure_message": null,
+            "traceback": null
+          }
+        ],
+        "stdout": "......                                                                   [100%]\n6 passed in 0.06s\n",
+        "stderr": ""
+      },
+      "finding_matches": [
+        {
+          "expectation": {
+            "category": "maintainability",
+            "severity": "MEDIUM",
+            "description_contains": [
+              "duplic"
+            ]
+          },
+          "matched_finding_id": null,
+          "matched_description": null,
+          "matched": false
+        }
+      ]
+    },
+    {
+      "case_id": "security-hardcoded-secret",
+      "case_version": "1",
+      "category": "security",
+      "workflow_run_id": "ee7484c5-7816-4514-b038-f92bdf5c3abf",
+      "status": "completed",
+      "final_decision": "pass",
+      "rounds_executed": 1,
+      "duration_ms": 16243,
+      "final_score": 0.938,
+      "rule_score": 0.75,
+      "execution_score": 1.0,
+      "llm_score": 1.0,
+      "correctness_score": 1.0,
+      "security_score": 1.0,
+      "maintainability_score": 1.0,
+      "findings_expected": 1,
+      "findings_matched": 0,
+      "finding_resolution_rate": 1.0,
+      "findings": [
+        {
+          "id": "finding_b81c4b341c126ca5",
+          "category": "security",
+          "severity": "CRITICAL",
+          "description": "Hardcoded production API key found in source code.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_a62079c7d8e27c43",
+          "category": "security",
+          "severity": "CRITICAL",
+          "description": "Hardcoded API secret detected in source code. Secrets should be managed via environment variables or a dedicated secret management service.",
+          "status": "resolved"
+        }
+      ],
+      "prompt_tokens": 6254,
+      "completion_tokens": 1570,
+      "total_tokens": 7824,
+      "test_result": {
+        "status": "passed",
+        "tests_total": 4,
+        "tests_passed": 4,
+        "tests_failed": 0,
+        "tests_skipped": 0,
+        "tests_xfailed": 0,
+        "tests_xpassed": 0,
+        "duration_ms": 1248,
+        "exit_code": 0,
+        "tests": [
+          {
+            "nodeid": "test_solution.py::test_get_api_key_success",
+            "outcome": "passed",
+            "duration_ms": 3,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_get_api_key_missing",
+            "outcome": "passed",
+            "duration_ms": 3,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_get_headers_success",
+            "outcome": "passed",
+            "duration_ms": 3,
+            "failure_message": null,
+            "traceback": null
+          },
+          {
+            "nodeid": "test_solution.py::test_get_headers_failure",
+            "outcome": "passed",
+            "duration_ms": 3,
+            "failure_message": null,
+            "traceback": null
+          }
+        ],
+        "stdout": "....                                                                     [100%]\n4 passed in 0.05s\n",
+        "stderr": ""
+      },
+      "finding_matches": [
+        {
+          "expectation": {
+            "category": "security",
+            "severity": "HIGH",
+            "description_contains": [
+              "secret"
+            ]
+          },
+          "matched_finding_id": null,
+          "matched_description": null,
+          "matched": false
+        }
+      ]
+    },
+    {
+      "case_id": "security-sql-injection",
+      "case_version": "1",
+      "category": "security",
+      "workflow_run_id": "1d35c3e2-94fc-49b6-87a5-6777819ac708",
+      "status": "completed_with_warnings",
+      "final_decision": "unresolved",
+      "rounds_executed": 1,
+      "duration_ms": 17674,
+      "final_score": 0.435,
+      "rule_score": 0.75,
+      "execution_score": 0.0,
+      "llm_score": 0.825,
+      "correctness_score": 0.5,
+      "security_score": 1.0,
+      "maintainability_score": 1.0,
+      "findings_expected": 1,
+      "findings_matched": 0,
+      "finding_resolution_rate": 1.0,
+      "findings": [
+        {
+          "id": "finding_0ae18020c214eb40",
+          "category": "security",
+          "severity": "CRITICAL",
+          "description": "The function uses string concatenation to build a SQL query, allowing an attacker to execute arbitrary SQL commands via the 'username' parameter.",
+          "status": "resolved"
+        },
+        {
+          "id": "finding_da099052e5fc2d22",
+          "category": "security",
+          "severity": "CRITICAL",
+          "description": "The function uses string concatenation to build a SQL query, which makes it vulnerable to SQL injection attacks. An attacker can manipulate the 'username' input to execute arbitrary SQL commands.",
+          "status": "resolved"
+        }
+      ],
+      "prompt_tokens": 6493,
+      "completion_tokens": 1651,
+      "total_tokens": 8144,
+      "test_result": {
+        "status": "failed",
+        "tests_total": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "tests_skipped": 0,
+        "tests_xfailed": 0,
+        "tests_xpassed": 0,
+        "duration_ms": 1959,
+        "exit_code": 2,
+        "tests": [],
+        "stdout": "\n==================================== ERRORS ====================================\n______________________ ERROR collecting test_solution.py _______________________\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/python.py:508: in importtestmodule\n    mod = import_path(\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/pathlib.py:596: in import_path\n    importlib.import_module(module_name)\n/usr/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<frozen importlib._bootstrap>:1206: in _gcd_import\n    ???\n<frozen importlib._bootstrap>:1178: in _find_and_load\n    ???\n<frozen importlib._bootstrap>:1149: in _find_and_load_unlocked\n    ???\n<frozen importlib._bootstrap>:690: in _load_unlocked\n    ???\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/assertion/rewrite.py:179: in exec_module\n    source_stat, co = _rewrite_test(fn, self.config)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/assertion/rewrite.py:348: in _rewrite_test\n    tree = ast.parse(source, filename=strfn)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/lib/python3.11/ast.py:50: in parse\n    return compile(source, filename, mode, flags,\nE     File \"/tmp/agent_review_tests_lgk904jg/test_solution.py\", line 1\nE       def test_find_user_special_characters(db_connection): db_connection.execute('INSERT INTO users (username, email) VALUES (?, ?)', ('user;drop', 'test@test.com')) result = find_user(db_connection, 'user;drop') assert result is not None assert result[1] == 'user;drop'\nE                      ^^^^^^\nE   SyntaxError: invalid syntax\n=========================== short test summary info ============================\nERROR test_solution.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.69s\n",
+        "stderr": ""
+      },
+      "finding_matches": [
+        {
+          "expectation": {
+            "category": "security",
+            "severity": "HIGH",
+            "description_contains": [
+              "sql"
+            ]
+          },
+          "matched_finding_id": null,
+          "matched_description": null,
+          "matched": false
+        }
+      ]
+    }
+  ],
+  "aggregate": {
+    "cases_total": 4,
+    "cases_passed": 3,
+    "cases_passed_with_warnings": 0,
+    "cases_retry": 0,
+    "cases_failed": 0,
+    "average_final_score": 0.812,
+    "average_rule_score": 0.75,
+    "average_execution_score": 0.75,
+    "average_llm_score": 0.956,
+    "average_correctness_score": 0.875,
+    "average_security_score": 1.0,
+    "average_maintainability_score": 1.0,
+    "finding_resolution_rate": 1.0,
+    "finding_expectation_match_rate": 0.25,
+    "retry_rate": 0.0,
+    "average_prompt_tokens": 5895.2,
+    "average_completion_tokens": 1596.8,
+    "average_total_tokens": 7492.0,
+    "total_duration_ms": 64270,
+    "average_case_duration_ms": 16067.5
+  }
+}

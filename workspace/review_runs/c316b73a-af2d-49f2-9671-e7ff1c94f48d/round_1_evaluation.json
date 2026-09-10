@@ -1,0 +1,32 @@
+{
+  "final_decision": "pass",
+  "rule_score": 0.75,
+  "execution_score": 1.0,
+  "llm_score": 1.0,
+  "security_score": 1.0,
+  "maintainability_score": 1.0,
+  "correctness_score": 1.0,
+  "final_score": 0.938,
+  "findings": [
+    {
+      "id": "finding_b2ce9e15da5f7577",
+      "category": "security",
+      "severity": "CRITICAL",
+      "description": "The function uses string concatenation to build a SQL query, which allows an attacker to perform SQL injection attacks by manipulating the 'username' parameter.",
+      "status": "resolved"
+    },
+    {
+      "id": "finding_5933987517b598d9",
+      "category": "security",
+      "severity": "CRITICAL",
+      "description": "The function uses string concatenation to build a SQL query, which makes it vulnerable to SQL injection attacks. An attacker could manipulate the 'username' input to execute arbitrary SQL commands.",
+      "status": "resolved"
+    }
+  ],
+  "reasons": [
+    "The candidate code correctly implements a parameterized query using the '?' placeholder, which effectively prevents SQL injection.",
+    "Both security findings regarding string concatenation were resolved by the refactoring.",
+    "The implementation is clean, readable, and passes all provided test cases, including an explicit SQL injection attempt test."
+  ],
+  "retry_feedback": null
+}

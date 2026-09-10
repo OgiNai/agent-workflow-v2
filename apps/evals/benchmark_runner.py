@@ -242,19 +242,19 @@ def build_benchmark_report(
                 test_result=test_result,
                 finding_matches=result.finding_matches,
                 prompt_tokens=sum(
-                    int(step.metadata["prompt_tokens"])
+                    int(step.metadata["llm_usage"]["prompt_tokens"])
                     for step in result.response.steps
-                    if step.metadata.get("prompt_tokens") is not None
+                    if step.metadata.get("llm_usage") is not None
                 ),
                 completion_tokens=sum(
-                    int(step.metadata["completion_tokens"])
+                    int(step.metadata["llm_usage"]["completion_tokens"])
                     for step in result.response.steps
-                    if step.metadata.get("completion_tokens") is not None
+                    if step.metadata.get("llm_usage") is not None
                 ),
                 total_tokens=sum(
-                    int(step.metadata["total_tokens"])
+                    int(step.metadata["llm_usage"]["total_tokens"])
                     for step in result.response.steps
-                    if step.metadata.get("total_tokens") is not None
+                    if step.metadata.get("llm_usage") is not None
                 ),
             )
         )
@@ -301,21 +301,17 @@ def build_benchmark_report(
     cases_total = len(case_reports)
 
     prompt_tokens = [
-        int(step.metadata["prompt_tokens"])
-        for step in result.response.steps
-        if step.metadata.get("prompt_tokens") is not None
+        case.prompt_tokens for case in case_reports if case.prompt_tokens is not None
     ]
 
     completion_tokens = [
-        int(step.metadata["completion_tokens"])
-        for step in result.response.steps
-        if step.metadata.get("completion_tokens") is not None
+        case.completion_tokens
+        for case in case_reports
+        if case.completion_tokens is not None
     ]
 
     total_tokens = [
-        int(step.metadata["total_tokens"])
-        for step in result.response.steps
-        if step.metadata.get("total_tokens") is not None
+        case.total_tokens for case in case_reports if case.total_tokens is not None
     ]
 
     aggregate = BenchmarkAggregateMetrics(

@@ -1,0 +1,39 @@
+{
+  "final_decision": "retry",
+  "rule_score": 0.75,
+  "execution_score": 0.0,
+  "llm_score": 0.25,
+  "security_score": 0.25,
+  "maintainability_score": 0.25,
+  "correctness_score": 0.25,
+  "final_score": 0.263,
+  "findings": [
+    {
+      "id": "finding_ac28fe48f8626574",
+      "category": "correctness",
+      "severity": "CRITICAL",
+      "description": "The function does not handle the case where count is zero, leading to an unhandled ZeroDivisionError.",
+      "status": "resolved"
+    },
+    {
+      "id": "finding_d5dd647ac575971f",
+      "category": "maintainability",
+      "severity": "LOW",
+      "description": "The function lacks type hinting, making it difficult to enforce expected input types for total and count.",
+      "status": "resolved"
+    },
+    {
+      "id": "finding_98303b04ee3a9919",
+      "category": "correctness",
+      "severity": "HIGH",
+      "description": "The function does not handle the case where 'count' is zero, which will raise a ZeroDivisionError exception.",
+      "status": "resolved"
+    }
+  ],
+  "reasons": [
+    "The candidate code contains a syntax error because multiple statements are placed on the same line without proper formatting, causing the test suite to fail during collection.",
+    "While the logic inside the function correctly addresses the ZeroDivisionError and includes type hints, the implementation is syntactically invalid.",
+    "The findings are marked as resolved because the logic intended to fix them is present, but the overall code quality is poor due to the syntax error."
+  ],
+  "retry_feedback": "The provided code contains a syntax error. Please ensure that the function body is properly indented on new lines rather than being placed on a single line after the function definition."
+}

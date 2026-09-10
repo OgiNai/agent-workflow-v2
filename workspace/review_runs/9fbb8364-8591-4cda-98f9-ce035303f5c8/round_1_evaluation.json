@@ -1,0 +1,39 @@
+{
+  "final_decision": "retry",
+  "rule_score": 0.75,
+  "execution_score": 0.0,
+  "llm_score": 0.512,
+  "security_score": 1.0,
+  "maintainability_score": 0.25,
+  "correctness_score": 0.25,
+  "final_score": 0.341,
+  "findings": [
+    {
+      "id": "finding_747510b14b148eeb",
+      "category": "correctness",
+      "severity": "CRITICAL",
+      "description": "The function does not check if 'count' is zero, leading to a ZeroDivisionError when an empty set is provided.",
+      "status": "resolved"
+    },
+    {
+      "id": "finding_9502654e2042dccd",
+      "category": "maintainability",
+      "severity": "LOW",
+      "description": "The function lacks type hints, making it difficult to enforce expected numeric inputs.",
+      "status": "resolved"
+    },
+    {
+      "id": "finding_98303b04ee3a9919",
+      "category": "correctness",
+      "severity": "HIGH",
+      "description": "The function does not handle the case where 'count' is zero, which will raise a ZeroDivisionError exception.",
+      "status": "resolved"
+    }
+  ],
+  "reasons": [
+    "The logic within the function correctly handles the zero-division case and includes type hints, resolving all historical findings.",
+    "The candidate code contains a syntax error due to improper formatting (missing newlines after the docstring and before the logic), which prevents the code from being imported or executed.",
+    "The execution score is 0.0 because the syntax error caused the test suite to fail during collection."
+  ],
+  "retry_feedback": "The logic is correct, but the code has a syntax error. Ensure that there are proper newlines after the docstring and before the function body statements so that the code is valid and executable."
+}

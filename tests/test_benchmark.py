@@ -387,6 +387,6 @@ def test_benchmark_report_averages_token_usage() -> None:
     assert case.completion_tokens == 150
     assert case.total_tokens == 450
 
-    assert report.aggregate.average_prompt_tokens == 150.0
-    assert report.aggregate.average_completion_tokens == 75.0
-    assert report.aggregate.average_total_tokens == 225.0
+    assert report.aggregate.average_prompt_tokens == 300.0
+    assert report.aggregate.average_completion_tokens == 150.0
+    assert report.aggregate.average_total_tokens == 450.0
