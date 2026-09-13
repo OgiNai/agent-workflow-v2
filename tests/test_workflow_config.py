@@ -1,10 +1,16 @@
 from apps.core.constants import DEFAULT_MAX_ROUNDS
+from apps.core.settings import get_workflow_settings
 from apps.core.workflow_config import WorkflowConfig
 from apps.schemas.requests import ReviewRequest
 
 
 def test_workflow_config_uses_central_default_max_rounds():
-    config = WorkflowConfig()
+    workflow_settings = get_workflow_settings()
+    config = WorkflowConfig(
+        max_rounds=workflow_settings.workflow_max_rounds,
+        force_retry_rounds=workflow_settings.workflow_force_retry_rounds,
+        always_retry=workflow_settings.workflow_always_retry,
+    )
 
     assert config.max_rounds == DEFAULT_MAX_ROUNDS
 

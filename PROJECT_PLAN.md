@@ -1451,13 +1451,79 @@ Result
 
 ---
 
-# Milestone 9 — Advanced Agentic Capabilities
+# Milestone 9 — OpenTelemetry Collector and Trace Backend
+
+Set up a complete OTLP telemetry pipeline so the OpenTelemetry instrumentation implemented in Milestone 3 has a real destination.
+
+## 9.1 — Define the telemetry architecture
+
+- Decide on the production telemetry pipeline:
+  - Application → OTLP → OpenTelemetry Collector → trace backend
+- Document the role of each component.
+- Keep application instrumentation independent from the specific telemetry backend.
+- Define separate development and production telemetry configurations.
+
+## 9.2 — Add local OpenTelemetry Collector
+
+- Add an OpenTelemetry Collector configuration for local development.
+- Configure the Collector to receive OTLP over HTTP on port `4318`.
+- Configure a development trace exporter/backend.
+- Verify that application spans are successfully received by the Collector.
+- Verify that the existing `localhost:4318` exporter warnings disappear.
+
+## 9.3 — Select and configure the production trace backend
+
+- Select a production-compatible tracing backend compatible with the project's free-tier constraints.
+- Configure the OpenTelemetry Collector to export traces to the selected backend.
+- Store backend credentials/configuration through environment variables or deployment secrets.
+- Do not hard-code telemetry credentials or endpoints.
+
+## 9.4 — Configure application telemetry endpoints
+
+- Add explicit telemetry configuration to application settings.
+- Support separate development and production OTLP endpoints.
+- Avoid attempting to export to `localhost:4318` when running in the production environment.
+- Define appropriate exporter behavior when telemetry is unavailable.
+- Ensure telemetry failures do not cause workflow execution failures.
+
+## 9.5 — Deploy the telemetry pipeline
+
+- Deploy the application and telemetry components using the chosen production architecture.
+- Configure the production OTLP endpoint.
+- Verify network connectivity between the application, Collector, and backend.
+- Verify that traces from deployed workflow executions reach the backend.
+
+## 9.6 — Validate end-to-end tracing
+
+Run a complete workflow and verify:
+
+- One workflow/root span is created.
+- Agent/tool child spans are created.
+- Trace context is propagated across the workflow.
+- Spans contain the expected workflow/run identifiers.
+- Trace status correctly reflects successful and failed executions.
+- Multiple workflow executions produce distinct traces.
+- Telemetry export failures do not affect API responses or workflow execution.
+
+## 9.7 — Production telemetry hardening
+
+- Configure batching and retry behavior.
+- Define appropriate exporter timeouts.
+- Prevent excessive telemetry retry logging.
+- Ensure graceful shutdown flushes pending spans where practical.
+- Review sensitive-data handling in span attributes and events.
+- Ensure API keys, prompts, source code, and other sensitive values are not unintentionally exported.
+- Document telemetry failure/degradation behavior.
+
+---
+
+# Milestone 10 — Advanced Agentic Capabilities
 
 **Goal:** Introduce genuinely agentic planning only when the system has enough capabilities for dynamic planning to provide meaningful value.
 
 The deterministic workflow remains the safety-critical default. LLM-based planning is introduced only for decisions that cannot be represented effectively by the existing fixed workflow.
 
-## 9.1 — Capability Registry
+## 10.1 — Capability Registry
 
 Define an application-controlled registry of available capabilities, such as:
 
@@ -1480,7 +1546,7 @@ Each capability must have:
 
 The LLM must never invent executable capabilities.
 
-## 9.2 — Dynamic Planning Architecture
+## 10.2 — Dynamic Planning Architecture
 
 Introduce an optional LLM Planner that selects from the registered capability vocabulary.
 
@@ -1516,7 +1582,7 @@ The planner may not:
 * Terminate the workflow directly.
 * Invent unsupported capabilities.
 
-## 9.3 — Deterministic Plan Validation
+## 10.3 — Deterministic Plan Validation
 
 Validate every LLM-generated plan against application policy.
 
@@ -1531,7 +1597,7 @@ Reject or safely fall back when:
 
 Retain the deterministic planner as a safe fallback.
 
-## 9.4 — Planner Failure and Fallback
+## 10.4 — Planner Failure and Fallback
 
 Define controlled behavior for:
 
@@ -1553,7 +1619,7 @@ Standard workflow
 
 Record fallback usage in workflow traces and logs.
 
-## 9.5 — Agent Collaboration
+## 10.5 — Agent Collaboration
 
 Evaluate whether specialist agents benefit from structured outputs produced by earlier agents.
 
@@ -1566,7 +1632,7 @@ Potential examples:
 * Evaluation findings → Repair strategy.
 * Test failures → Repair context.
 
-## 9.6 — Advanced Tool Selection
+## 10.6 — Advanced Tool Selection
 
 If justified by the capability registry, allow the planner to select deterministic tools from a constrained registry.
 
@@ -1578,7 +1644,7 @@ Tool selection must remain:
 * Observable.
 * Auditable.
 
-## 9.7 — Advanced Planning Evaluation
+## 10.7 — Advanced Planning Evaluation
 
 Extend the benchmark framework to measure:
 
@@ -1598,7 +1664,7 @@ Compare dynamic planning against the deterministic baseline.
 
 Do not retain dynamic planning if it does not provide measurable benefit.
 
-## 9.8 — Milestone Validation
+## 10.8 — Milestone Validation
 
 * Run the complete test suite.
 * Run the benchmark suite.
@@ -1613,11 +1679,11 @@ Do not retain dynamic planning if it does not provide measurable benefit.
 
 ---
 
-# Milestone 10 — Platform Extensibility and Azure
+# Milestone 11 — Platform Extensibility and Azure
 
 **Goal:** Demonstrate that the architecture can support additional providers and integrations without coupling the core application to a specific cloud or LLM provider.
 
-## 10.1 — Provider Abstraction Review
+## 11.1 — Provider Abstraction Review
 
 Review provider-specific dependencies and ensure they remain isolated behind application interfaces.
 
@@ -1633,7 +1699,7 @@ Provider implementation
 
 The workflow must not depend directly on Gemini-specific APIs.
 
-## 10.2 — Azure LLM Provider
+## 11.2 — Azure LLM Provider
 
 Add Azure-hosted LLM support where practical.
 
@@ -1644,7 +1710,7 @@ Add Azure-hosted LLM support where practical.
 * Support provider/model selection through configuration.
 * Preserve existing observability and token tracking.
 
-## 10.3 — Provider Comparison
+## 11.3 — Provider Comparison
 
 Run selected benchmark cases against supported providers/models.
 
@@ -1660,7 +1726,7 @@ Compare:
 * Cost where measurable.
 * Failure rate.
 
-## 10.4 — Integration Architecture Review
+## 11.4 — Integration Architecture Review
 
 Review the complete system for extensibility across:
 
@@ -1673,7 +1739,7 @@ Review the complete system for extensibility across:
 
 Remove accidental coupling discovered during implementation.
 
-## 10.5 — Documentation and Architecture Review
+## 11.5 — Documentation and Architecture Review
 
 Update:
 
@@ -1687,7 +1753,7 @@ Update:
 
 Document important trade-offs and rejected alternatives.
 
-## 10.6 — Final Production Validation
+## 11.6 — Final Production Validation
 
 Run the complete platform validation:
 

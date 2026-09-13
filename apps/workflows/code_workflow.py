@@ -467,7 +467,7 @@ class CodeWorkflow:
 
                 workflow.status = "failed"
                 workflow.final_decision = "failed"
-                workflow.summary = f"Workflow failed: {exc}"
+                workflow.summary = "Workflow execution failed."
                 workflow.retry_count = max(rounds_executed - 1, 0)
                 workflow.duration_ms = int(
                     (perf_counter() - workflow_started_at) * 1000
