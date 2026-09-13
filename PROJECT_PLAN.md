@@ -485,610 +485,1243 @@ Event sourcing may be added later.
 
 ---
 
-# Milestone Roadmap
+# Milestone 1 — Core Workflow
 
-## Milestone 1
+**Goal:** Establish the initial end-to-end AI code review/refactoring workflow.
 
-Core workflow foundation.
+## 1.1 — Project Foundation
 
-Deliverable
+* Establish Python project structure.
+* Configure dependency management with `uv`.
+* Configure linting and formatting.
+* Configure pytest.
+* Establish application entry point.
+* Establish environment configuration.
+* Establish initial API structure.
 
-Working end-to-end workflow.
+## 1.2 — Workflow Input
 
-Includes
+Support:
 
-- routing
-- planner
-- generation
-- review
-- refactor
-- testing
-- evaluation
+* User instruction.
+* Inline source code.
+* File path input.
+
+`code` and `file_path` are mutually exclusive.
+
+Define the initial task types:
+
+```text
+auto
+generate
+review_refactor
+```
+
+## 1.3 — Router
+
+Implement deterministic routing based on the request.
+
+Responsibilities:
+
+* Validate input.
+* Determine source type.
+* Resolve `auto` task type.
+* Produce a structured `RouterResult`.
+
+The router must not perform LLM reasoning.
+
+## 1.4 — Planner
+
+Implement the initial deterministic Planner.
+
+Responsibilities:
+
+* Determine required workflow stages.
+* Determine whether initial code generation is required.
+* Produce a structured `WorkflowPlan`.
+
+The Planner does not execute agents.
+
+The Planner remains deterministic because the initial workflow has a fixed set of capabilities and a predictable execution path.
+
+## 1.5 — Code Writer
+
+Implement the CodeWriter agent with explicit modes:
+
+```text
+generate
+refactor
+repair
+```
+
+Use structured LLM output.
+
+## 1.6 — Code Reviewer
+
+Implement the Reviewer agent.
+
+Responsibilities:
+
+* Analyze source code.
+* Identify correctness and maintainability issues.
+* Produce structured findings.
+
+## 1.7 — Security Auditor
+
+Implement a separate Security Auditor agent.
+
+Responsibilities:
+
+* Analyze security risks.
+* Identify unsafe patterns.
+* Produce structured findings.
+
+## 1.8 — Test Generator
+
+Implement the Test Generator agent.
+
+Responsibilities:
+
+* Generate tests based on the candidate code and workflow context.
+* Produce executable test artifacts.
+
+## 1.9 — Test Runner
+
+Execute generated tests through a controlled subprocess.
+
+Capture:
+
+* Exit code.
+* Standard output.
+* Standard error.
+* Test results.
+
+## 1.10 — Evaluator
+
+Implement deterministic and LLM-assisted evaluation.
+
+The evaluator combines:
+
+* Review findings.
+* Security findings.
+* Test execution.
+* Candidate code.
+* Evaluation criteria.
+
+The evaluator produces a structured decision.
+
+## 1.11 — Workflow Orchestration
+
+Implement the end-to-end workflow:
+
+```text
+Request
+  ↓
+Router
+  ↓
+Planner
+  ↓
+[CodeWriter.generate]
+  ↓
+Reviewer
+  ↓
+Security Auditor
+  ↓
+CodeWriter.refactor/repair
+  ↓
+Test Generator
+  ↓
+Test Runner
+  ↓
+Evaluator
+  ↓
+Retry or Complete
+```
+
+For review/refactor requests, the initial generation stage is skipped.
+
+On retry:
+
+```text
+Evaluator
+   ↓
+Reviewer
+   ↓
+Security Auditor
+   ↓
+CodeWriter
+```
+
+## 1.12 — API
+
+Implement the initial review API.
+
+Support:
+
+* Authentication.
+* Review requests.
+* Workflow execution.
+* Structured responses.
+
+**Outcome:** A complete local end-to-end workflow exists.
 
 ---
 
-## Milestone 2
+# Milestone 2 — Persistence and Application State
 
-Milestone 2 implementation plan
+**Goal:** Persist workflow execution and expose durable application state.
 
+## 2.1 — Persistence Foundation
 
-# Step 2.1 — Persistence foundation
+* Introduce PostgreSQL.
+* Configure Neon PostgreSQL.
+* Add SQLAlchemy.
+* Add async database access.
+* Establish database models.
+* Introduce Alembic.
 
-New files
+Core entities:
 
-apps/database/
-├── __init__.py
-├── base.py
-├── session.py
-└── models.py
+```text
+workflow_runs
+agent_steps
+tool_calls
+artifacts
+feedback
+```
 
-Changes
+## 2.2 — Repository Layer
 
-pyproject.toml
-apps/core/settings.py
+Implement repositories for persistence operations.
 
-Deliverables:
+Repositories must isolate database access from workflow and agent logic.
 
-SQLAlchemy 2.x (async)
-asyncpg
-AsyncEngine
-AsyncSession
-DeclarativeBase
-configuration from WorkflowSettings
-ORM models
-database initialization
+Use dependency injection.
 
-No workflow changes yet.
+## 2.3 — Persistence Integration
 
-# Step 2.2 — Repository layer
+Persist:
 
-New
+* Workflow runs.
+* Agent execution.
+* Tool execution.
+* Generated artifacts.
+* Evaluation results.
+* Workflow status.
 
-apps/repositories/
-├── __init__.py
-├── workflow_repository.py
-├── agent_step_repository.py
-├── artifact_repository.py
-└── feedback_repository.py
+Use Alembic migrations as the schema authority.
 
-Deliverables:
+Do not create database tables automatically during application startup.
 
-repository interfaces
-SQLAlchemy implementation
-CRUD operations
+## 2.4 — Feedback API
 
-Still no workflow modifications.
+Implement:
 
-# Step 2.3 — Integrate persistence
+```text
+POST /reviews/{workflow_run_id}/feedback
+```
 
-Modify:
+Feedback contains:
 
-code_workflow.py
-artifact_manager.py
+* `rating`
+* `accepted`
+* `comment`
 
-Deliverables:
+One feedback record exists per workflow.
 
-create WorkflowRun
-store AgentSteps
-store Artifacts
-update workflow status
-update summary
-save evaluation scores
+A subsequent submission overwrites the existing feedback.
 
-# Step 2.4 — Feedback API
+## 2.5 — Database Bootstrap and Readiness
 
-Modify:
+Implement application startup/readiness checks.
 
-apps/api/feedback.py
+Startup must verify:
 
-Deliverables:
+* Configuration validity.
+* Database connectivity.
 
-persist feedback
-validation
-repository integration
+The `/ready` endpoint must expose readiness information without leaking secrets.
 
-# Step 2.5 — Database bootstrap
+Database cleanup must occur during application shutdown.
 
-The purpose of this step is to make the application responsible for initializing and validating its database connection during startup, while keeping the existing Alembic-based schema management.
-
-Modify:
-- main.py
-- apps/database/session.py
-- apps/api/health.py
-
-Deliverables:
-- Initialize/validate the async database engine during application startup.
-- Verify Neon connectivity through the readiness endpoint.
-- Gracefully close the database engine during shutdown.
-- Keep database schema creation and evolution exclusively under Alembic.
+**Outcome:** Workflow state survives process restarts and can be inspected through persisted data.
 
 ---
 
-## Milestone 3
+# Milestone 3 — Observability
 
-Observability.
+**Goal:** Make workflow execution observable, traceable, and measurable.
 
-                    CodeWorkflow
-                         │
-          ┌──────────────┼──────────────┐
-          │              │              │
-          ▼              ▼              ▼
-      Business       Persistence     Observability
-       result            │                │
-          │              │                │
-   ReviewResponse     PostgreSQL      OpenTelemetry
-                         │                │
-                  WorkflowRun         Traces
-                  AgentStep           Metrics
-                  Artifact             Logs
-                         │
-                         │
-                    durable history
+## 3.1 — Structured Logging
 
-Implement
+Implement structured JSON logging.
 
-# Step 3.1 - Production logging strategy
+Include useful correlation information such as:
 
-- structured logs
-- correlation IDs
-- operational/error events
-- don't duplicate normal workflow events
+* Workflow ID.
+* Agent name.
+* Step name.
+* Round number.
+* Event type.
+* Error information where appropriate.
 
-# Step 3.2 - OpenTelemetry foundation
+Do not log secrets or sensitive source content unnecessarily.
 
-- OTLP
-- configurable exporter
-- optional collector/backend
-- FastAPI lifecycle integration
+## 3.2 — OpenTelemetry Foundation
 
-# Step 3.3 - Tracing
+Introduce OpenTelemetry with configurable exporters.
 
-- workflow span
-- child spans per meaningful workflow operation
-- attributes for workflow ID, round, agent, model, etc.
-- exceptions/status recorded on spans
+Telemetry must be optional and configurable.
 
-# Step 3.4 - LLM usage tracking
+## 3.3 — Workflow and Agent Spans
 
-- extract Gemini usage metadata
-- propagate it from Gemini client → agent → _trace_agent
-- persist to existing AgentStep fields
-- expose relevant usage in telemetry
+Create telemetry hierarchy:
 
-# Step 3.5 - Prompt versioning
+```text
+Workflow Span
+    ├── Router Span
+    ├── Planner Span
+    ├── Agent Span
+    │     └── LLM Span
+    ├── Tool Span
+    ├── Test Runner Span
+    └── Evaluator Span
+```
 
-- retain historical prompts
-- explicit current version
-- persist version with each LLM execution
-- make historical evaluation reproducible
+The telemetry model is distinct from persisted workflow history.
 
----
+Persistence answers:
 
-## Milestone 4
+> What happened in the workflow?
 
-Evaluation.
+Telemetry answers:
 
-The evaluation system provides deterministic, structured and reproducible
-measurement of workflow quality.
+> How did the workflow execute?
 
-### Step 4.1 — Normalized evaluation findings
+## 3.4 — LLM Usage Tracking
 
-- Introduce normalized `Finding` schema.
-- Reviewer and Security Auditor return individual findings.
-- Assign stable application-generated finding IDs.
-- Evaluator determines whether each finding is `resolved` or `unresolved`.
-- Preserve original finding metadata during evaluation.
-- Persist findings through existing `AgentStep.output_json`.
-- Do not create a separate findings database table.
+Track LLM usage where supported:
 
-### Step 4.2 — Structured pytest evaluation
+* Input tokens.
+* Output tokens.
+* Total tokens.
+* Model.
+* Latency.
 
-Improve the deterministic test runner by consuming structured pytest output.
+Persist usage on agent steps where appropriate.
 
-- Replace stdout parsing with `pytest-json-report`.
-- Make the JSON report the canonical test execution input.
-- Populate `TestRunResult` from the JSON report.
-- Capture:
-  - total tests
-  - passed
-  - failed
-  - skipped
-  - xfailed
-  - xpassed
-  - individual test results
-  - failure messages
-  - tracebacks
-  - execution duration
-- Remove dependence on regex parsing of pytest console output.
-- Ensure the Evaluator consumes `TestRunResult`.
+Expose usage through telemetry without exposing sensitive prompt content.
 
-### Step 4.3 — Deterministic evaluation scoring and decision policy
+## 3.5 — Prompt Versioning
 
-Separate qualitative LLM evaluation from deterministic workflow decisions.
+Version prompts explicitly.
 
-LLM responsibilities:
+Persist the prompt version associated with LLM agent execution.
 
-- evaluate correctness
-- evaluate security
-- evaluate maintainability
-- determine finding resolution
-- provide explanations
-
-Deterministic responsibilities:
-
-- rule score
-- execution score
-- finding severity penalties
-- final score calculation
-- final evaluation decision
-
-Define explicit thresholds for:
-
-- pass
-- pass_with_warnings
-- retry
-
-High and critical unresolved findings must be able to force retry.
-
-Failed execution must be able to force retry.
-
-The Evaluator must never know or enforce retry limits.
-
-Add unit tests covering every decision boundary.
-
-### Step 4.4 — Evaluation benchmark framework
-
-Create a reproducible benchmark corpus.
-
-Each benchmark case should define:
-
-- user instruction
-- source code
-- expected findings
-- expected behavior
-- security expectations
-- test expectations
-
-Execute the complete workflow against benchmark cases and collect structured
-evaluation results.
-
-### Step 4.5 — Evaluation reports
-
-Generate structured benchmark reports containing:
-
-- benchmark run metadata
-- workflow/model configuration
-- prompt versions
-- per-case evaluation results
-- finding resolution
-- test results
-- final scores
-- final decisions
-- aggregate metrics
-
-### Step 4.6 — Metrics storage
-
-Persist benchmark-level evaluation metrics when existing workflow persistence
-is insufficient for historical querying.
-
-Prefer existing `WorkflowRun` and `AgentStep` JSON data where practical.
-
-Introduce dedicated metrics persistence only when a concrete querying or
-reporting requirement justifies it.
-
-### Step 4.7 — Evaluation comparison tooling
-
-Provide comparison of benchmark runs across:
-
-- final score
-- rule score
-- execution score
-- correctness
-- security
-- maintainability
-- finding resolution rate
-- retry rate
-- latency
-- LLM usage
+**Outcome:** Workflow behavior can be monitored, diagnosed, and measured.
 
 ---
 
-## Milestone 5 — Agentic Planning
+# Milestone 4 — Evaluation and Benchmarking
 
-**Goal:** Replace the current deterministic Planner with an LLM-based planning agent while preserving the existing workflow contracts, validation boundaries, retry behavior, observability, and evaluation architecture.
+**Goal:** Establish objective evaluation and regression measurement for the AI workflow.
 
-### 5.1 LLM Planner Design
+## 4.1 — Normalized Findings
 
-* Define the Planner's responsibilities and boundaries.
-* Define the structured planning output consumed by `CodeWorkflow`.
-* Decide which workflow decisions should be delegated to the LLM and which remain deterministic application policy.
-* Define the Planner prompt and version it alongside the existing agent prompts.
-* Define the model configuration used by the Planner.
-* Ensure the Planner cannot directly execute tools or mutate workflow state.
+Create a canonical finding representation.
 
-### 5.2 Structured Planner Output
+Each finding should include:
 
-* Introduce Pydantic schemas for Planner input/output.
-* Represent the selected workflow/task strategy explicitly.
-* Validate all LLM-generated Planner output before it reaches the workflow.
-* Handle malformed, incomplete, or unexpected LLM responses safely.
-* Ensure unsupported planning decisions fall back to deterministic application behavior where appropriate.
+* Stable application-generated finding ID.
+* Severity.
+* Category.
+* Message.
+* File path where applicable.
+* Line information where applicable.
+* Source agent.
+* Resolution status.
 
-### 5.3 Planner Agent Implementation
+Reviewer and Security Auditor findings begin as unresolved.
 
-* Implement the Planner as an LLM-backed agent using the existing LLM abstraction.
-* Integrate token usage and prompt-version tracking with the existing observability infrastructure.
-* Preserve retry/error handling conventions used by other LLM agents.
-* Keep provider/model-specific implementation details outside the workflow orchestration layer.
+The Evaluator determines whether findings are resolved after refactoring.
 
-### 5.4 Workflow Integration
+Findings remain persisted through existing `AgentStep.output_json`; a separate findings table is not required.
 
-* Replace the current deterministic planning decision with the LLM Planner.
-* Preserve the existing workflow sequence and retry semantics.
-* Ensure Planner output determines strategy rather than bypassing safety, security, testing, or evaluation stages.
-* Verify both major paths:
+## 4.2 — Structured Test Results
 
-  * review/refactor
-  * feature/code generation
-* Ensure invalid Planner output cannot cause uncontrolled workflow behavior.
+Standardize pytest execution results.
 
-### 5.5 Planner Evaluation
+Use `pytest-json-report` where appropriate.
 
-* Extend benchmark cases where necessary to test planning decisions.
-* Add expectations for Planner behavior where deterministic validation is possible.
-* Measure Planner impact on:
+Define a canonical `TestRunResult` containing information such as:
 
-  * correctness
-  * security
-  * maintainability
-  * execution success
-  * token usage
-  * execution duration
-* Verify that introducing non-deterministic planning does not degrade existing benchmark performance.
-* Document known sources of LLM variance.
+* Test count.
+* Passed.
+* Failed.
+* Skipped.
+* Errors.
+* Exit status.
+* Duration.
 
-### 5.6 Planner Failure and Fallback Strategy
+## 4.3 — Deterministic Evaluation
 
-* Define behavior for LLM timeout, provider errors, malformed output, and unavailable model.
-* Ensure a Planner failure produces a controlled workflow outcome.
-* Define when deterministic fallback is appropriate versus when the workflow should fail.
-* Add automated tests for failure and fallback scenarios.
+Implement deterministic scoring and decision policy.
 
-### 5.7 Milestone Validation
+Evaluation should combine:
 
-* Run the complete test suite.
-* Run the benchmark suite using the new Planner.
-* Compare results against the pre-LLM Planner baseline.
-* Verify persisted workflow traces and token usage.
-* Verify OpenTelemetry traces remain correctly associated with Planner execution.
-* Confirm that existing API behavior remains compatible unless intentionally changed.
+* Rule/evaluation score.
+* Test execution score.
+* Severity penalties.
+* Finding resolution.
 
-**Outcome:** The workflow has a production-oriented LLM Planner that makes structured planning decisions while deterministic application logic continues to enforce workflow safety, validation, retry, and evaluation policies.
+The LLM evaluator may assess qualitative dimensions such as:
+
+* Correctness.
+* Security.
+* Maintainability.
+* Finding resolution.
+
+Deterministic application logic owns:
+
+* Rule score.
+* Execution score.
+* Severity penalties.
+* Final score.
+* Final decision.
+* Retry policy.
+
+High/critical unresolved findings can force retry.
+
+Failed test execution can force retry.
+
+## 4.4 — Benchmark Corpus
+
+Create a representative benchmark corpus covering:
+
+* Correctness issues.
+* Security issues.
+* Maintainability issues.
+* Refactoring tasks.
+* Feature-generation tasks.
+* Test-generation scenarios.
+* Difficult edge cases.
+
+## 4.5 — Benchmark Reports
+
+Generate reports measuring:
+
+* Evaluation score.
+* Correctness.
+* Security.
+* Maintainability.
+* Test success.
+* Finding resolution.
+* Retry rate.
+* Latency.
+* Token usage.
+
+## 4.6 — Metrics Storage
+
+Introduce dedicated metrics storage only when a concrete query/reporting requirement justifies it.
+
+Avoid duplicating information already available through workflow history and telemetry.
+
+## 4.7 — Comparison Tooling
+
+Provide tooling for comparing:
+
+* Model versions.
+* Prompt versions.
+* Workflow configurations.
+* Agent behavior.
+
+**Outcome:** The platform can objectively measure workflow quality and detect regressions.
 
 ---
 
-## Milestone 6 — GitHub Integration
+# Milestone 5 — Production Hardening
 
-**Goal:** Integrate the workflow with GitHub repositories while keeping GitHub-specific concerns isolated from the core workflow and domain logic.
+**Goal:** Harden the existing workflow into a reliable production-oriented application before adding external integrations or deployment complexity.
 
-### 6.1 GitHub Integration Architecture
+The deterministic Planner remains the default. The application owns workflow orchestration, retry behavior, safety policies, and execution control. LLM agents remain responsible for task-specific reasoning within their specialized roles.
+
+## 5.1 — Workflow State, Contracts and Orchestration
+
+Review and harden the boundaries between:
+
+```text
+API
+ ↓
+Router
+ ↓
+Planner
+ ↓
+CodeWorkflow
+ ↓
+Agents / Tools
+ ↓
+Evaluator
+ ↓
+Persistence
+```
+
+* Review all workflow state models and contracts.
+* Eliminate duplicated or ambiguous state.
+* Make workflow state transitions explicit.
+* Verify dependency direction.
+* Verify dependency injection boundaries.
+* Ensure the orchestrator remains responsible for workflow control.
+* Ensure agents do not mutate orchestration state directly.
+* Wire request-level workflow configuration consistently.
+* Verify `max_rounds` and retry configuration behavior.
+* Verify both generation and review/refactor paths.
+* Verify retry always returns to Reviewer → Security Auditor before refactoring.
+
+## 5.2 — Failure Handling and Resilience
+
+Define and test controlled behavior for:
+
+* LLM timeout.
+* LLM provider/API failure.
+* Malformed structured LLM responses.
+* Database connection/query failure.
+* File access failure.
+* Test execution failure.
+* Evaluator failure.
+* Unexpected agent exceptions.
+* Workflow retry exhaustion.
+
+Define clear distinctions between:
+
+```text
+Infrastructure / application failure
+    → status = failed
+
+Evaluation failure requiring another attempt
+    → workflow retry
+
+Retry limit reached
+    → status = completed_with_warnings
+       final_decision = unresolved
+```
+
+* Ensure exceptions are logged and traced appropriately.
+* Prevent infrastructure failures from being misclassified as evaluation failures.
+* Ensure partial workflow failures leave consistent persisted state.
+* Add automated tests for all important failure paths.
+
+## 5.3 — Automated Testing Strategy
+
+Establish a comprehensive testing pyramid:
+
+```text
+             E2E
+              │
+        Integration
+              │
+       Workflow / Agent
+              │
+             Unit
+```
+
+Add or improve tests for:
+
+* Router behavior.
+* Planner behavior.
+* Agent contracts.
+* Repository operations.
+* Evaluation logic.
+* Retry policy.
+* Persistence.
+* API endpoints.
+* File handling.
+* Failure scenarios.
+* Workflow integration.
+
+Use dependency injection to test workflows without making real LLM calls.
+
+The complete test suite must be deterministic and runnable without external LLM access where practical.
+
+## 5.4 — Configuration and Environment Hardening
+
+Review and harden:
+
+* Pydantic settings validation.
+* Development/test/production configuration.
+* Workflow configuration.
+* LLM configuration.
+* Database configuration.
+* Telemetry configuration.
+* API authentication configuration.
+
+Ensure secrets and sensitive configuration values never appear in:
+
+* Logs.
+* OpenTelemetry attributes.
+* API responses.
+* Persisted workflow data.
+* Benchmark reports.
+* Error messages.
+
+## 5.5 — Security Hardening
+
+Review the application for security risks associated with API access, filesystem access, and generated-code execution.
+
+Cover:
+
+* API authentication.
+* Request validation and size limits.
+* Path traversal prevention.
+* Workspace isolation.
+* Artifact path safety.
+* Generated-code execution boundaries.
+* Pytest/subprocess execution boundaries.
+* Malicious source-code input.
+* Prompt injection through source code and comments.
+* Secret leakage.
+* Unsafe error disclosure.
+
+Document known security limitations of executing generated Python code.
+
+## 5.6 — Production Readiness Validation
+
+Run a complete production-readiness check covering:
+
+* Full automated test suite.
+* Benchmark suite.
+* Linting.
+* Type checking.
+* Database migration validation.
+* Clean application startup.
+* Clean application shutdown.
+* Database connectivity.
+* LLM failure handling.
+* Retry behavior.
+* Persistence consistency.
+* OpenTelemetry traces.
+* Structured logs.
+
+**Outcome:** The application has a stable, tested and observable local production baseline suitable for external integration and deployment.
+
+---
+
+# Milestone 6 — GitHub Integration
+
+**Goal:** Integrate GitHub as an external adapter while keeping GitHub-specific concerns isolated from the core workflow and domain logic.
+
+## 6.1 — GitHub Integration Architecture
 
 * Define GitHub as an external adapter around the existing workflow.
 * Keep `CodeWorkflow` independent of GitHub APIs.
 * Define the boundary between:
 
-  * GitHub repository data
-  * application/domain models
-  * `ReviewRequest`
-  * `ReviewResponse`
-* Decide which GitHub operations belong in the initial MVP and which are deferred.
+  * GitHub repository data.
+  * Application/domain models.
+  * `ReviewRequest`.
+  * `ReviewResponse`.
+* Define which GitHub operations belong to the MVP.
+* Defer non-essential GitHub functionality.
 * Define security and permission boundaries before implementation.
 
-### 6.2 GitHub Authentication
+Target architecture:
+
+```text
+GitHub Adapter
+      ↓
+ReviewRequest
+      ↓
+CodeWorkflow
+      ↓
+ReviewResponse
+      ↓
+GitHub Adapter
+```
+
+## 6.2 — GitHub Authentication
 
 * Select the authentication mechanism appropriate for the MVP.
-* Store GitHub credentials/tokens through the existing application configuration and secret-management approach.
+* Store GitHub credentials using the existing configuration and secret-management approach.
 * Never expose credentials through API responses, logs, traces, benchmark reports, or persisted workflow data.
-* Define the minimum GitHub permissions required by the application.
-* Add configuration validation and failure handling for missing/invalid credentials.
+* Define minimum required GitHub permissions.
+* Validate authentication configuration.
+* Handle expired, invalid, or insufficient credentials safely.
 
-### 6.3 Repository and File Access
+## 6.3 — Repository and File Access
 
-* Implement a GitHub client/adapter for repository access.
-* Support retrieving source files from a repository.
-* Validate repository, branch/ref, and file-path inputs.
-* Apply the existing project file/path security policies where applicable.
-* Handle GitHub API errors, missing repositories/files, unsupported files, and rate limits.
-* Avoid coupling GitHub response models directly to internal workflow schemas.
+Implement isolated GitHub operations for:
 
-### 6.4 GitHub → Workflow Integration
+* Repository identification.
+* Branch/ref selection.
+* File retrieval.
+* Repository metadata.
+* Changed-file discovery where required.
 
-* Convert GitHub source content into the existing `ReviewRequest`.
-* Reuse the existing review/refactor workflow rather than creating a separate GitHub workflow.
-* Preserve the existing Planner → Reviewer → Security Auditor → CodeWriter → Test Generator → Test Runner → Evaluator flow.
-* Record sufficient source/repository metadata to identify the origin of a workflow run without storing unnecessary external data.
-* Ensure GitHub-specific failures are distinguishable from workflow/LLM failures.
+Map GitHub-specific responses into application-level models.
 
-### 6.5 Review Result Presentation
+Do not allow GitHub SDK/API types to leak into the workflow layer.
 
-* Define how `ReviewResponse` is mapped back to GitHub concepts.
-* Support an initial read-only review result flow before modifying repositories.
-* Determine how findings, severity, descriptions, and suggested changes should be represented.
-* Ensure generated output remains understandable in a GitHub developer workflow.
-* Preserve the existing API response independently of the GitHub presentation layer.
+## 6.4 — Pull Request Review
 
-### 6.6 Pull Request Integration
+Support the core GitHub review flow:
 
-* Extend the adapter to support pull-request-based reviews.
-* Retrieve relevant changed files from a pull request.
-* Run the existing workflow against the selected changes.
-* Determine how findings should be associated with changed files/lines where technically feasible.
-* Support publishing review results as GitHub PR comments or review feedback.
-* Define safeguards preventing accidental repository modifications or unintended PR actions.
+```text
+Pull Request
+      ↓
+Changed files
+      ↓
+ReviewRequest
+      ↓
+CodeWorkflow
+      ↓
+Findings / ReviewResponse
+```
 
-### 6.7 GitHub Write Operations
+* Define how multiple changed files are handled.
+* Define file-level workflow boundaries.
+* Preserve workflow-run identity.
+* Persist the resulting workflow history.
+* Ensure unsupported file types are handled safely.
 
-* If code changes are enabled, explicitly separate:
+## 6.5 — GitHub Review Comments
 
-  * generated/refactored code
-  * proposed repository changes
-  * actual GitHub write operations
-* Define whether the MVP creates commits, branches, or pull requests.
-* Require explicit application-level authorization for write operations.
-* Ensure failed write operations cannot leave the workflow in an inconsistent state.
-* Record external operation results in workflow observability.
+Map normalized findings to GitHub review comments where technically possible.
 
-### 6.8 GitHub Error Handling and Resilience
+Each comment should preserve:
 
-* Handle authentication failures.
-* Handle repository/file/PR not found errors.
-* Handle permission errors.
-* Handle GitHub API rate limits.
-* Handle transient GitHub API failures.
-* Define retry behavior for external API calls separately from LLM/workflow retries.
-* Ensure external failures are observable and diagnosable.
+* Finding ID.
+* Severity.
+* File path.
+* Line information.
+* Review message.
+* Workflow-run reference where appropriate.
 
-### 6.9 GitHub Integration Testing
+Handle findings that cannot be mapped cleanly to a source line.
 
-* Add unit tests for GitHub adapter behavior.
-* Test conversion between GitHub data and internal workflow models.
-* Test authentication and error handling.
-* Mock GitHub API interactions rather than depending on live GitHub calls for normal CI tests.
-* Add integration tests against GitHub only if appropriate credentials and environment configuration are available.
-* Verify that the core workflow remains testable without GitHub.
+## 6.6 — GitHub Integration Testing
 
-### 6.10 Milestone Validation
+* Mock GitHub API interactions.
+* Test authentication failures.
+* Test repository/file retrieval failures.
+* Test malformed GitHub responses.
+* Test pull requests with multiple files.
+* Test findings-to-comment mapping.
+* Ensure tests do not depend on a real GitHub repository.
 
-* Execute a complete review against a real GitHub repository/file.
-* Verify the resulting `ReviewResponse`.
-* Verify workflow persistence and observability.
-* Verify token usage and timing remain recorded.
-* Verify GitHub operations are represented clearly in logs/traces without exposing credentials.
-* Run the complete automated test suite.
-* Document the supported GitHub workflow and known limitations.
+## 6.7 — Milestone Validation
 
-**Outcome:** GitHub becomes a real external integration layer for the platform without coupling GitHub-specific logic to the core AI workflow, allowing the same workflow to operate through the existing API and through GitHub.
+Verify the complete integration:
 
+```text
+GitHub PR
+    ↓
+GitHub adapter
+    ↓
+AI workflow
+    ↓
+Evaluation
+    ↓
+Findings
+    ↓
+GitHub review
+```
 
----
-
-## Milestone 7
-
-Production API.
-
-Implement
-
-- authentication
-- rate limiting
-- versioning
-- background jobs
-- robust error handling
+**Outcome:** The platform can process GitHub-based code reviews without coupling the core workflow to GitHub.
 
 ---
 
-## Milestone 8
+# Milestone 7 — Containerization, CI/CD and Cloud Deployment
 
-Deployment.
+**Goal:** Package and deploy the application as a production service using Docker, GitHub Actions and Google Cloud Run.
 
-Implement
+## 7.1 — Production Docker Image
 
-- Docker
-- GitHub Actions
-- Cloud Run
-- monitoring
-- Azure deployment
+* Create a production Dockerfile.
+* Use a minimal appropriate Python image.
+* Install only required runtime dependencies.
+* Run as a non-root user.
+* Configure environment-driven settings.
+* Support graceful application shutdown.
+* Verify image reproducibility where practical.
+
+## 7.2 — Container Validation
+
+Test the container locally for:
+
+* Application startup.
+* Health endpoint.
+* Readiness endpoint.
+* Database connectivity.
+* LLM connectivity.
+* Graceful shutdown.
+* Correct filesystem/workspace behavior.
+* Configuration validation.
+
+## 7.3 — Continuous Integration
+
+Create GitHub Actions CI covering:
+
+```text
+Pull Request / Push
+        ↓
+Lint
+        ↓
+Type Check
+        ↓
+Unit Tests
+        ↓
+Integration Tests
+        ↓
+Benchmark / regression checks
+        ↓
+Docker Build
+```
+
+* Keep CI reproducible.
+* Do not expose secrets in logs.
+* Fail builds on important quality regressions.
+
+## 7.4 — Database Migration Strategy
+
+Define the production migration process using Alembic.
+
+* Validate migrations in CI.
+* Prevent application startup from silently creating schema.
+* Define when migrations execute during deployment.
+* Verify migration compatibility with Neon PostgreSQL.
+* Document rollback considerations.
+
+## 7.5 — Google Cloud Run Deployment
+
+Deploy the API to Google Cloud Run.
+
+Configure:
+
+* Container port.
+* Environment variables.
+* Secrets.
+* CPU/memory.
+* Request timeout.
+* Concurrency.
+* Minimum/maximum instances as appropriate.
+* Health/readiness behavior.
+
+## 7.6 — Production Observability
+
+Verify production telemetry:
+
+```text
+Cloud Run
+   ↓
+Application logs
+   ↓
+OpenTelemetry
+   ↓
+Workflow span
+   ↓
+Agent spans
+   ↓
+LLM calls
+```
+
+Ensure workflow IDs and request correlation remain available without exposing sensitive data.
+
+## 7.7 — Deployment Validation
+
+Perform a complete production smoke test:
+
+* API authentication.
+* Generation workflow.
+* Review/refactor workflow.
+* Persistence.
+* Feedback.
+* Evaluation.
+* GitHub integration.
+* Error handling.
+* Telemetry.
+* Graceful shutdown.
+
+**Outcome:** The platform runs as a deployed, containerized production service with automated CI/CD.
 
 ---
 
-## Milestone 9 — Evaluation & Benchmarking Maturity
+# Milestone 8 — API and User Experience
 
-Goal:
-Strengthen the evaluation framework so benchmark results can distinguish
-real system improvements from stochastic LLM variation and provide
-statistically meaningful performance comparisons.
+**Goal:** Improve usability and provide a clear interface for demonstrating the complete platform without compromising the API-first architecture.
 
-### 9.1 Repeated Benchmark Runs
-- Support executing the same benchmark configuration multiple times.
-- Allow configurable number of repetitions.
-- Preserve each individual benchmark run/report.
-- Aggregate repeated runs into a single experiment result.
+## 8.1 — Workflow Status and History API
 
-### 9.2 Statistical Benchmark Metrics
-- Calculate mean, minimum, maximum, and standard deviation for key metrics.
-- Track score distributions across repeated runs.
-- Aggregate token usage and execution duration across runs.
-- Report per-category statistics where useful.
+Add API capabilities for:
 
-### 9.3 Baseline vs Candidate Experiments
-- Introduce the concept of a benchmark experiment containing:
-  - baseline configuration
-  - candidate configuration
-  - repeated runs for each configuration
-- Compare aggregate distributions rather than individual runs.
-- Report absolute and relative improvements.
+* Workflow status.
+* Workflow history.
+* Workflow details.
+* Agent-step history.
+* Findings.
+* Evaluation results.
+* Generated artifacts.
+* Feedback.
 
-### 9.4 Statistical Significance
-- Evaluate whether observed differences are likely to represent
-  meaningful improvements rather than LLM stochastic variation.
-- Add appropriate statistical tests where justified.
-- Avoid over-interpreting small benchmark differences.
+Reuse existing persistence structures where practical.
 
-### 9.5 Benchmark Reproducibility
-- Record all configuration required to reproduce an experiment:
-  - model
-  - temperature
-  - prompt versions
-  - benchmark case version
-  - workflow configuration
-  - repetition count
-- Ensure benchmark reports remain self-contained and versioned.
+## 8.2 — API Contract Refinement
 
-### 9.6 Evaluation Visualization
-- Add lightweight visualization of benchmark results where useful.
-- Support comparison of score distributions, token usage, and duration.
-- Keep visualization separate from the core evaluation engine.
+Review the public API for:
 
-### 9.7 Evaluation Regression Detection
-- Define thresholds for detecting meaningful regressions.
-- Support automated benchmark checks in CI/CD for selected benchmark suites.
-- Fail or warn when candidate performance falls below configured thresholds.
+* Consistent request/response schemas.
+* Error responses.
+* Authentication.
+* Validation errors.
+* Workflow identifiers.
+* Pagination where needed.
+* Backward compatibility.
+
+Only introduce new request fields when they represent genuine user-facing capabilities.
+
+## 8.3 — Developer Experience
+
+Improve:
+
+* API documentation.
+* OpenAPI descriptions.
+* Example requests.
+* Example responses.
+* Local development instructions.
+* Deployment instructions.
+* Architecture documentation.
+
+Provide representative examples for:
+
+* Feature generation.
+* Code review/refactoring.
+* GitHub review.
+
+## 8.4 — Streamlit Dashboard
+
+Implement the dashboard only after the API and backend are stable.
+
+The dashboard should provide:
+
+```text
+Submit workflow
+      ↓
+View workflow status
+      ↓
+View generated/refactored code
+      ↓
+View findings
+      ↓
+View tests
+      ↓
+View evaluation
+      ↓
+View workflow history
+```
+
+## 8.5 — Observability View
+
+Expose useful, non-sensitive workflow information such as:
+
+* Agent execution sequence.
+* Round number.
+* Latency.
+* Evaluation score.
+* Retry count.
+* Token usage.
+* Final decision.
+
+Do not expose secrets or unnecessary internal infrastructure details.
+
+## 8.6 — UX Validation
+
+Test the complete user journey:
+
+```text
+User
+ ↓
+API / Dashboard
+ ↓
+Workflow
+ ↓
+Evaluation
+ ↓
+Result
+```
+
+**Outcome:** The platform has a usable API and optional demonstration UI suitable for recruiters, developers and portfolio presentation.
 
 ---
 
-## Milestone 10
+# Milestone 9 — Advanced Agentic Capabilities
 
-Portfolio Polish.
+**Goal:** Introduce genuinely agentic planning only when the system has enough capabilities for dynamic planning to provide meaningful value.
 
-Produce
+The deterministic workflow remains the safety-critical default. LLM-based planning is introduced only for decisions that cannot be represented effectively by the existing fixed workflow.
 
-- architecture diagrams
-- documentation
-- API docs
-- Streamlit dashboard
-- benchmark results
-- recruiter-friendly README
+## 9.1 — Capability Registry
+
+Define an application-controlled registry of available capabilities, such as:
+
+* Code review.
+* Security analysis.
+* Performance analysis.
+* Static analysis.
+* Refactoring.
+* Test generation.
+* Test execution.
+* Evaluation.
+
+Each capability must have:
+
+* Stable identifier.
+* Input contract.
+* Output contract.
+* Execution constraints.
+* Safety requirements.
+
+The LLM must never invent executable capabilities.
+
+## 9.2 — Dynamic Planning Architecture
+
+Introduce an optional LLM Planner that selects from the registered capability vocabulary.
+
+Architecture:
+
+```text
+User Request
+      ↓
+Deterministic Router
+      ↓
+LLM Planner
+      ↓
+Constrained Plan
+      ↓
+Deterministic Policy Validation
+      ↓
+Workflow Execution
+```
+
+The planner may propose:
+
+* Relevant capabilities.
+* Capability ordering.
+* Strategy.
+* Task-specific priorities.
+
+The planner may not:
+
+* Execute tools.
+* Mutate workflow state.
+* Bypass mandatory security/evaluation stages.
+* Change retry limits.
+* Terminate the workflow directly.
+* Invent unsupported capabilities.
+
+## 9.3 — Deterministic Plan Validation
+
+Validate every LLM-generated plan against application policy.
+
+Reject or safely fall back when:
+
+* A capability is unsupported.
+* Required safety stages are missing.
+* Ordering constraints are violated.
+* Required evaluation is omitted.
+* The plan exceeds configured limits.
+* The output is malformed.
+
+Retain the deterministic planner as a safe fallback.
+
+## 9.4 — Planner Failure and Fallback
+
+Define controlled behavior for:
+
+* Timeout.
+* Provider failure.
+* Invalid structured output.
+* Unsupported plan.
+* Model unavailability.
+
+Fallback:
+
+```text
+LLM Planner unavailable
+        ↓
+Deterministic Planner
+        ↓
+Standard workflow
+```
+
+Record fallback usage in workflow traces and logs.
+
+## 9.5 — Agent Collaboration
+
+Evaluate whether specialist agents benefit from structured outputs produced by earlier agents.
+
+Introduce explicit inter-agent contracts where useful rather than relying on unrestricted conversational context.
+
+Potential examples:
+
+* Reviewer findings → CodeWriter.
+* Security findings → CodeWriter.
+* Evaluation findings → Repair strategy.
+* Test failures → Repair context.
+
+## 9.6 — Advanced Tool Selection
+
+If justified by the capability registry, allow the planner to select deterministic tools from a constrained registry.
+
+Tool selection must remain:
+
+* Application-defined.
+* Schema-validated.
+* Permission-controlled.
+* Observable.
+* Auditable.
+
+## 9.7 — Advanced Planning Evaluation
+
+Extend the benchmark framework to measure:
+
+* Correctness.
+* Security.
+* Maintainability.
+* Execution success.
+* Finding resolution.
+* Workflow efficiency.
+* Retry rate.
+* Token usage.
+* Latency.
+* Plan validity.
+* Fallback rate.
+
+Compare dynamic planning against the deterministic baseline.
+
+Do not retain dynamic planning if it does not provide measurable benefit.
+
+## 9.8 — Milestone Validation
+
+* Run the complete test suite.
+* Run the benchmark suite.
+* Compare deterministic and agentic workflows.
+* Verify safety constraints.
+* Verify fallback behavior.
+* Verify telemetry.
+* Verify persistence.
+* Verify API compatibility.
+
+**Outcome:** The platform has a controlled agentic planning capability that dynamically composes supported capabilities only when this provides measurable value over deterministic orchestration.
 
 ---
 
-# Current Status
+# Milestone 10 — Platform Extensibility and Azure
 
-Architecture decisions are considered locked.
+**Goal:** Demonstrate that the architecture can support additional providers and integrations without coupling the core application to a specific cloud or LLM provider.
 
-The following have already been implemented:
+## 10.1 — Provider Abstraction Review
 
-- Unified workflow
-- Planner-first architecture
-- Async Gemini client
-- Lifespan support
-- Unified request model
-- Simplified router
-- Shared path helpers
-- Async pytest runner
-- Dependency Injection
-- ToolResult schema relocation
-- Evaluator redesign
-- Retry redesign
-- Source type redesign
-- Task type redesign
+Review provider-specific dependencies and ensure they remain isolated behind application interfaces.
 
-Future chats should begin from the current milestone without revisiting previous architectural decisions unless a deliberate architecture change is proposed.
+Separate:
+
+```text
+Application / Agents
+        ↓
+LLM abstraction
+        ↓
+Provider implementation
+```
+
+The workflow must not depend directly on Gemini-specific APIs.
+
+## 10.2 — Azure LLM Provider
+
+Add Azure-hosted LLM support where practical.
+
+* Implement an Azure provider behind the existing LLM abstraction.
+* Reuse existing structured-output contracts.
+* Reuse agent implementations where possible.
+* Keep provider configuration isolated.
+* Support provider/model selection through configuration.
+* Preserve existing observability and token tracking.
+
+## 10.3 — Provider Comparison
+
+Run selected benchmark cases against supported providers/models.
+
+Compare:
+
+* Correctness.
+* Security.
+* Maintainability.
+* Execution success.
+* Finding resolution.
+* Latency.
+* Token usage.
+* Cost where measurable.
+* Failure rate.
+
+## 10.4 — Integration Architecture Review
+
+Review the complete system for extensibility across:
+
+* LLM providers.
+* GitHub.
+* Databases.
+* Telemetry backends.
+* Workflow capabilities.
+* UI clients.
+
+Remove accidental coupling discovered during implementation.
+
+## 10.5 — Documentation and Architecture Review
+
+Update:
+
+* README.
+* Architecture documentation.
+* Architecture decisions.
+* API documentation.
+* Deployment documentation.
+* Configuration documentation.
+* Benchmark documentation.
+
+Document important trade-offs and rejected alternatives.
+
+## 10.6 — Final Production Validation
+
+Run the complete platform validation:
+
+```text
+API
+ ↓
+Workflow
+ ↓
+Agents
+ ↓
+Tools
+ ↓
+Evaluation
+ ↓
+Persistence
+ ↓
+Observability
+ ↓
+GitHub
+ ↓
+Cloud deployment
+```
+
+Verify:
+
+* Automated tests.
+* Benchmarks.
+* CI/CD.
+* Database migrations.
+* Security controls.
+* Observability.
+* Deployment.
+* Provider abstraction.
+* GitHub integration.
+* API behavior.
+
+**Outcome:** The project demonstrates a production-oriented, extensible AI engineering platform with multi-agent orchestration, deterministic controls, evaluation, observability, persistence, GitHub integration, cloud deployment, and optional multi-provider LLM support.

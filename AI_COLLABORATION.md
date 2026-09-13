@@ -220,6 +220,9 @@ https://github.com/OgiNai/agent-workflow-v2
 ## Repository Structure
 
 ```text
+
+alembic/
+
 apps/
 ├── agents/
 ├── api/
@@ -232,6 +235,8 @@ apps/
 ├── schemas/
 ├── tools/
 └── workflows/
+
+benchmarks/
 
 tests/
 
@@ -274,7 +279,7 @@ Only request user input when:
 
 # Communication Style
 
-Assume previously approved architectural decisions remain in effect.
+Assume previously approved architectural decisions remain in effect. Future chats should begin from the current milestone without revisiting previous architectural decisions unless a deliberate architecture change is proposed.
 
 Do not:
 
