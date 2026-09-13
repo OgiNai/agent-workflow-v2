@@ -4,6 +4,8 @@ from pathlib import Path
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from apps.core.constants import DEFAULT_MAX_ROUNDS
+
 # easiest way to retrieve the API token is to load the environment variables
 # from .env file into the environment os.environ and get it from there
 # import os
@@ -35,7 +37,7 @@ class AuthSettings(BaseSettings):
 
 
 class WorkflowSettings(BaseSettings):
-    workflow_max_rounds: int = 3
+    workflow_max_rounds: int = DEFAULT_MAX_ROUNDS
     # Development only
     workflow_force_retry_rounds: int = 0
     workflow_always_retry: bool = False

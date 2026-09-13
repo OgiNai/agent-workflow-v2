@@ -55,18 +55,14 @@ class CodeWorkflow:
         inspector: InspectionAgent | None = None,
         test_generator: TestGeneratorAgent | None = None,
         evaluator: EvaluatorAgent | None = None,
-        config: WorkflowConfig | None = None,
+        config: WorkflowConfig,
     ) -> None:
         self.planner = planner or PlannerAgent()
         self.code_writer = code_writer or CodeWriterAgent()
         self.inspector = inspector or InspectionAgent()
         self.test_generator = test_generator or TestGeneratorAgent()
         self.evaluator = evaluator or EvaluatorAgent()
-        self._workflow_config = config or WorkflowConfig(
-            max_rounds=1,
-            force_retry_rounds=0,
-            always_retry=False,
-        )
+        self.workflow_config = config
 
     async def run(self, request: ReviewRequest) -> ReviewResponse:
         workflow_run_id = uuid4()
@@ -132,12 +128,12 @@ class CodeWorkflow:
                     input_data={
                         "instruction": router_result.instruction,
                         "task_type": router_result.task_type,
-                        "max_rounds": self._workflow_config.max_rounds,
+                        # "max_rounds": self.workflow_config.max_rounds,
                     },
                     runner=partial(
                         self.planner.run,
                         router_result,
-                        self._workflow_config.max_rounds,
+                        # self.workflow_config.max_rounds,
                     ),
                 )
                 step_order += 1
@@ -158,7 +154,7 @@ class CodeWorkflow:
 
                 for round_number in range(
                     1,
-                    self._workflow_config.max_rounds + 1,
+                    self.workflow_config.max_rounds + 1,
                 ):
                     rounds_executed = round_number
 
@@ -348,9 +344,9 @@ class CodeWorkflow:
                             evaluation=evaluation,
                         )
 
-                    retry_override_active = self._workflow_config.always_retry or (
-                        self._workflow_config.force_retry_rounds > 0
-                        and round_number < self._workflow_config.force_retry_rounds
+                    retry_override_active = self.workflow_config.always_retry or (
+                        self.workflow_config.force_retry_rounds > 0
+                        and round_number < self.workflow_config.force_retry_rounds
                     )
 
                     evaluator_decision = evaluation.final_decision
@@ -371,7 +367,7 @@ class CodeWorkflow:
                                     "workflow_decision": workflow_decision,
                                     "override_reason": (
                                         "always_retry"
-                                        if self._workflow_config.always_retry
+                                        if self.workflow_config.always_retry
                                         else "force_retry_rounds"
                                     ),
                                 },
@@ -391,6 +387,11 @@ class CodeWorkflow:
                                 "Retry routes back to Reviewer with "
                                 "latest candidate code."
                             ),
+                            metadata={
+                                "decision": workflow_decision,
+                                "next_round": round_number + 1,
+                                "max_rounds": self.workflow_config.max_rounds,
+                            },
                         )
                     )
 
@@ -419,7 +420,7 @@ class CodeWorkflow:
                 if retry_override_active:
                     test_for = (
                         "always retry"
-                        if self._workflow_config.always_retry
+                        if self.workflow_config.always_retry
                         else "force rounds"
                     )
                     final_summary += (
@@ -748,7 +749,6 @@ class CodeWorkflow:
         )
 
 
-# @trace_workflow
 async def run_code_workflow(request: ReviewRequest) -> ReviewResponse:
     workflow_settings = get_workflow_settings()
 

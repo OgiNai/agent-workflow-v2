@@ -28,7 +28,7 @@ class WorkflowPlan(BaseModel):
     requires_generation: bool
     requires_refactor: bool = True
     requires_tests: bool = True
-    max_rounds: int
+    # max_rounds: int
     steps: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 

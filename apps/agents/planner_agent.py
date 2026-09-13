@@ -13,7 +13,8 @@ class PlannerAgent:
     agent_name = "planner"
 
     async def run(
-        self, router_result: RouterResult, max_rounds: int
+        self,
+        router_result: RouterResult,  # max_rounds: int
     ) -> tuple[WorkflowPlan, int]:
         started = time.perf_counter()
         requires_generation = router_result.task_type == "generate"
@@ -35,7 +36,7 @@ class PlannerAgent:
             requires_generation=requires_generation,
             requires_refactor=True,
             requires_tests=True,
-            max_rounds=max_rounds,
+            # max_rounds=max_rounds,
             steps=steps,
             notes=["Deterministic planner."],
         )
