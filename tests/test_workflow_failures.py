@@ -1,0 +1,410 @@
+"""Tests for workflow failure handling and resilience."""
+
+import logging
+from unittest.mock import AsyncMock, Mock
+
+import pytest
+
+from apps.agents.code_writer_agent import CodeWriterAgent
+from apps.agents.evaluator_agent import EvaluatorAgent
+from apps.agents.inspection_agent import InspectionAgent
+from apps.agents.planner_agent import PlannerAgent
+from apps.agents.test_generator_agent import TestGeneratorAgent
+from apps.core.constants import DEFAULT_MAX_ROUNDS
+from apps.core.workflow_config import WorkflowConfig
+from apps.database.session import close_database_engine
+from apps.llm.llm_exceptions import LLMGenerationError
+from apps.schemas.agent_outputs import (
+    CodeWriterOutput,
+    EvaluatorOutput,
+    PlannerOutput,
+    ReviewerOutput,
+    SecurityAuditOutput,
+    TestGeneratorOutput,
+)
+from apps.schemas.requests import ReviewRequest
+from apps.tools.test_runner import TestRunResult
+from apps.workflows.code_workflow import CodeWorkflow
+
+
+@pytest.fixture
+def workflow_config() -> WorkflowConfig:
+    return WorkflowConfig(
+        max_rounds=DEFAULT_MAX_ROUNDS,
+        force_retry_rounds=0,
+        always_retry=False,
+    )
+
+
+@pytest.fixture
+def review_request() -> ReviewRequest:
+    return ReviewRequest(
+        instruction="Review and improve this function.",
+        code="""
+def add(a: int, b: int) -> int:
+    return a + b
+""",
+        save_artifacts=False,
+    )
+
+
+@pytest.fixture
+def planner_output() -> PlannerOutput:
+    return PlannerOutput(
+        task_type="review_refactor",
+        requires_generation=False,
+        requires_refactor=True,
+        requires_tests=True,
+    )
+
+
+@pytest.fixture
+def reviewer_output() -> ReviewerOutput:
+    return ReviewerOutput(
+        summary="No significant issues found.",
+        findings=[],
+        suggestions=[],
+        risk_level="LOW",
+    )
+
+
+@pytest.fixture
+def security_output() -> SecurityAuditOutput:
+    return SecurityAuditOutput(
+        findings=[],
+        notes=None,
+    )
+
+
+@pytest.fixture
+def code_writer_output() -> CodeWriterOutput:
+    return CodeWriterOutput(
+        code="""
+def add(a: int, b: int) -> int:
+    return a + b
+""",
+        explanation="No changes required.",
+        changed_behavior_warnings=[],
+    )
+
+
+@pytest.fixture
+def test_generator_output() -> TestGeneratorOutput:
+    return TestGeneratorOutput(
+        tests="""
+from solution import add
+
+
+def test_add():
+    assert add(1, 2) == 3
+""",
+        coverage_notes=[],
+    )
+
+
+@pytest.fixture
+def test_run_result() -> TestRunResult:
+    return TestRunResult(
+        status="passed",
+        exit_code=0,
+        duration_ms=10,
+        stdout="1 passed",
+        stderr="",
+        tests_total=1,
+        tests_passed=1,
+        tests_failed=0,
+        tests_skipped=0,
+        tests_xfailed=0,
+        tests_xpassed=0,
+        tests=[],
+    )
+
+
+@pytest.fixture
+def evaluator_output() -> EvaluatorOutput:
+    return EvaluatorOutput(
+        final_decision="pass",
+        rule_score=1.0,
+        execution_score=1.0,
+        llm_score=1.0,
+        security_score=1.0,
+        maintainability_score=1.0,
+        correctness_score=1.0,
+        final_score=1.0,
+        findings=[],
+        reasons=[],
+        retry_feedback=None,
+    )
+
+
+@pytest.fixture
+async def cleanup_database_engine():
+    yield
+    await close_database_engine()
+
+
+def create_workflow(
+    workflow_config: WorkflowConfig,
+    *,
+    planner: PlannerAgent | None = None,
+    code_writer: CodeWriterAgent | None = None,
+    inspector: InspectionAgent | None = None,
+    test_generator: TestGeneratorAgent | None = None,
+    evaluator: EvaluatorAgent | None = None,
+) -> CodeWorkflow:
+    return CodeWorkflow(
+        planner=planner or Mock(spec=PlannerAgent),
+        code_writer=code_writer or Mock(spec=CodeWriterAgent),
+        inspector=inspector or Mock(spec=InspectionAgent),
+        test_generator=test_generator or Mock(spec=TestGeneratorAgent),
+        evaluator=evaluator or Mock(spec=EvaluatorAgent),
+        config=workflow_config,
+    )
+
+
+@pytest.mark.anyio
+async def test_llm_failure_marks_workflow_failed(
+    cleanup_database_engine,
+    workflow_config: WorkflowConfig,
+    review_request: ReviewRequest,
+):
+    internal_error = "Gemini provider failure: https://internal.example/api key=secret"
+    planner = Mock(spec=PlannerAgent)
+    planner.run = AsyncMock(side_effect=LLMGenerationError(internal_error))
+
+    workflow = create_workflow(
+        workflow_config,
+        planner=planner,
+    )
+
+    result = await workflow.run(review_request)
+
+    assert result.status == "failed"
+    assert result.final_decision == "failed"
+    assert result.summary == "Workflow execution failed."
+    assert internal_error not in result.summary
+
+    workflow_steps = [step for step in result.steps if step.step_name == "planner"]
+    assert len(workflow_steps) == 1
+    assert workflow_steps[0].status == "failed"
+
+    failed_steps = [step for step in result.steps if step.status == "failed"]
+    assert failed_steps
+    assert failed_steps[-1].detail == "Agent execution failed."
+    assert internal_error not in failed_steps[-1].detail
+
+
+@pytest.mark.anyio
+async def test_unexpected_agent_failure_marks_workflow_failed(
+    cleanup_database_engine,
+    workflow_config: WorkflowConfig,
+    review_request: ReviewRequest,
+    planner_output: PlannerOutput,
+    caplog: pytest.LogCaptureFixture,
+):
+    planner = Mock(spec=PlannerAgent)
+    planner.run = AsyncMock(return_value=(planner_output, 5))
+
+    internal_error = "unexpected reviewer failure: /srv/private/project/.env"
+    inspector = Mock(spec=InspectionAgent)
+    inspector.run = AsyncMock(side_effect=RuntimeError(internal_error))
+
+    workflow = create_workflow(
+        workflow_config,
+        planner=planner,
+        inspector=inspector,
+    )
+
+    with caplog.at_level(logging.ERROR, logger="apps.workflows.code_workflow"):
+        result = await workflow.run(review_request)
+
+    assert "agent_execution_failed" in caplog.text
+    assert "unexpected reviewer failure: /srv/private/project/.env" in caplog.text
+
+    assert result.status == "failed"
+    assert result.final_decision == "failed"
+    assert result.summary == "Workflow execution failed."
+
+    assert internal_error not in result.summary
+
+    reviewer_steps = [
+        step for step in result.steps if step.step_name == "inspection.reviewer"
+    ]
+
+    assert len(reviewer_steps) == 1
+    assert reviewer_steps[0].status == "failed"
+
+    failed_steps = [step for step in result.steps if step.status == "failed"]
+    assert failed_steps
+    assert failed_steps[-1].detail == "Agent execution failed."
+    assert internal_error not in failed_steps[-1].detail
+
+
+@pytest.mark.anyio
+async def test_test_runner_failure_marks_workflow_failed(
+    cleanup_database_engine,
+    workflow_config: WorkflowConfig,
+    review_request: ReviewRequest,
+    planner_output: PlannerOutput,
+    reviewer_output: ReviewerOutput,
+    security_output: SecurityAuditOutput,
+    code_writer_output: CodeWriterOutput,
+    test_generator_output: TestGeneratorOutput,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    planner = Mock(spec=PlannerAgent)
+    planner.run = AsyncMock(return_value=(planner_output, 5))
+
+    inspector = Mock(spec=InspectionAgent)
+    inspector.run = AsyncMock(
+        side_effect=[
+            (reviewer_output, 5),
+            (security_output, 5),
+        ]
+    )
+
+    code_writer = Mock(spec=CodeWriterAgent)
+    code_writer.run = AsyncMock(return_value=(code_writer_output, 5))
+
+    test_generator = Mock(spec=TestGeneratorAgent)
+    test_generator.run = AsyncMock(return_value=(test_generator_output, 5))
+
+    workflow = create_workflow(
+        workflow_config,
+        planner=planner,
+        inspector=inspector,
+        code_writer=code_writer,
+        test_generator=test_generator,
+    )
+
+    internal_error = "pytest infrastructure failure: /tmp/secret-test-workspace"
+    test_runner = AsyncMock(side_effect=RuntimeError(internal_error))
+
+    monkeypatch.setattr(
+        "apps.workflows.code_workflow.run_pytest_for_code",
+        test_runner,
+    )
+
+    with caplog.at_level(logging.ERROR, logger="apps.workflows.code_workflow"):
+        result = await workflow.run(review_request)
+
+    assert "test_runner_execution_failed" in caplog.text
+    assert "pytest infrastructure failure: /tmp/secret-test-workspace" in caplog.text
+
+    assert result.status == "failed"
+    assert result.final_decision == "failed"
+    assert result.summary == "Workflow execution failed."
+
+    assert internal_error not in result.summary
+
+    test_runner_steps = [
+        step for step in result.steps if step.step_name == "test_runner"
+    ]
+
+    assert len(test_runner_steps) == 1
+    assert test_runner_steps[0].status == "failed"
+
+    failed_steps = [step for step in result.steps if step.status == "failed"]
+    assert failed_steps
+    assert failed_steps[-1].detail == "Test runner execution failed."
+    assert internal_error not in failed_steps[-1].detail
+
+
+@pytest.mark.anyio
+async def test_failed_workflow_preserves_completed_agent_steps(
+    cleanup_database_engine,
+    workflow_config: WorkflowConfig,
+    review_request: ReviewRequest,
+    planner_output: PlannerOutput,
+):
+    planner = Mock(spec=PlannerAgent)
+    planner.run = AsyncMock(return_value=(planner_output, 5))
+
+    inspector = Mock(spec=InspectionAgent)
+    inspector.run = AsyncMock(side_effect=RuntimeError("security audit unavailable"))
+
+    workflow = create_workflow(
+        workflow_config,
+        planner=planner,
+        inspector=inspector,
+    )
+
+    result = await workflow.run(review_request)
+
+    assert result.status == "failed"
+
+    step_names = [step.step_name for step in result.steps]
+
+    assert "input_router" in step_names
+    assert "planner" in step_names
+    assert "inspection.reviewer" in step_names
+    assert "workflow" in step_names
+
+    planner_steps = [step for step in result.steps if step.step_name == "planner"]
+
+    assert planner_steps[0].status == "success"
+
+    reviewer_steps = [
+        step for step in result.steps if step.step_name == "inspection.reviewer"
+    ]
+
+    assert reviewer_steps[0].status == "failed"
+
+
+@pytest.mark.anyio
+async def test_successful_workflow_still_returns_completed(
+    cleanup_database_engine,
+    workflow_config: WorkflowConfig,
+    review_request: ReviewRequest,
+    planner_output: PlannerOutput,
+    reviewer_output: ReviewerOutput,
+    security_output: SecurityAuditOutput,
+    code_writer_output: CodeWriterOutput,
+    test_generator_output: TestGeneratorOutput,
+    test_run_result: TestRunResult,
+    evaluator_output: EvaluatorOutput,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    planner = Mock(spec=PlannerAgent)
+    planner.run = AsyncMock(return_value=(planner_output, 5))
+
+    inspector = Mock(spec=InspectionAgent)
+    inspector.run = AsyncMock(
+        side_effect=[
+            (reviewer_output, 5),
+            (security_output, 5),
+        ]
+    )
+
+    code_writer = Mock(spec=CodeWriterAgent)
+    code_writer.run = AsyncMock(return_value=(code_writer_output, 5))
+
+    test_generator = Mock(spec=TestGeneratorAgent)
+    test_generator.run = AsyncMock(return_value=(test_generator_output, 5))
+
+    evaluator = Mock(spec=EvaluatorAgent)
+    evaluator.run = AsyncMock(return_value=(evaluator_output, 5))
+
+    workflow = create_workflow(
+        workflow_config,
+        planner=planner,
+        inspector=inspector,
+        code_writer=code_writer,
+        test_generator=test_generator,
+        evaluator=evaluator,
+    )
+
+    monkeypatch.setattr(
+        "apps.workflows.code_workflow.run_pytest_for_code",
+        AsyncMock(return_value=test_run_result),
+    )
+
+    result = await workflow.run(review_request)
+
+    assert result.status == "completed"
+    assert result.final_decision == "pass"
+    assert result.summary == "Workflow completed successfully."
+    assert result.rounds_executed == 1
+
+    assert all(step.status != "failed" for step in result.steps)

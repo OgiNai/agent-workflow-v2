@@ -261,7 +261,11 @@ class CodeWorkflow:
                             candidate.code,
                             tests_output.tests,
                         )
-                    except Exception as exc:
+                    except Exception:
+                        logger.exception(
+                            "test_runner_execution_failed",
+                            extra={"workflow_id": str(workflow_run_id)},
+                        )
                         test_duration_ms = int(
                             (perf_counter() - test_started_at) * 1000
                         )
@@ -273,7 +277,7 @@ class CodeWorkflow:
                                 status="failed",
                                 latency_ms=test_duration_ms,
                                 round_number=round_number,
-                                detail=str(exc),
+                                detail="Test runner execution failed.",
                             )
                         )
                         raise
@@ -459,7 +463,7 @@ class CodeWorkflow:
                     steps=context.traces,
                 )
 
-            except Exception as exc:
+            except Exception:
                 logger.exception(
                     "workflow_failed",
                     extra={"workflow_id": str(workflow_run_id)},
@@ -478,7 +482,7 @@ class CodeWorkflow:
                         step_name="workflow",
                         step_type="workflow",
                         status="failed",
-                        detail=str(exc),
+                        detail="Workflow execution failed.",
                     )
                 )
 
@@ -490,7 +494,7 @@ class CodeWorkflow:
                     task_type=workflow.task_type or request.task_type,
                     source_type=workflow.source_type or "none",
                     final_decision="failed",
-                    summary=f"Workflow failed: {exc}",
+                    summary="Workflow execution failed.",
                     final_code=final_code,
                     evaluation=final_evaluation,
                     artifacts=context.artifacts,
@@ -514,7 +518,11 @@ class CodeWorkflow:
 
         try:
             result, latency_ms = await runner()
-        except Exception as exc:
+        except Exception:
+            logger.exception(
+                "agent_execution_failed",
+                extra={"workflow_id": str(context.workflow_run_id), "agent": step_name},
+            )
             duration_ms = int((perf_counter() - started_at) * 1000)
 
             await self._trace_agent(
@@ -527,7 +535,7 @@ class CodeWorkflow:
                 status="failed",
                 input_data=input_data,
                 metadata={},
-                detail=str(exc),
+                detail="Agent execution failed.",
             )
             raise
 
