@@ -429,3 +429,128 @@ async def test_failed_workflow_is_persisted_with_sanitized_summary(
     assert persisted_workflow.status == "failed"
     assert persisted_workflow.final_decision == "failed"
     assert persisted_workflow.summary == "Workflow execution failed."
+
+
+@pytest.mark.anyio
+async def test_failure_during_retry_preserves_previous_round_steps(
+    cleanup_database_engine,
+    workflow_config: WorkflowConfig,
+    review_request: ReviewRequest,
+    planner_output: PlannerOutput,
+    reviewer_output: ReviewerOutput,
+    security_output: SecurityAuditOutput,
+    code_writer_output: CodeWriterOutput,
+    test_generator_output: TestGeneratorOutput,
+    test_run_result: TestRunResult,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    planner = Mock(spec=PlannerAgent)
+    planner.run = AsyncMock(return_value=(planner_output, 5))
+
+    inspector = Mock(spec=InspectionAgent)
+    inspector.run = AsyncMock(
+        side_effect=[
+            (reviewer_output, 5),
+            (security_output, 5),
+            (reviewer_output, 5),
+            RuntimeError("security audit unavailable during retry"),
+        ]
+    )
+
+    code_writer = Mock(spec=CodeWriterAgent)
+    code_writer.run = AsyncMock(return_value=(code_writer_output, 5))
+
+    test_generator = Mock(spec=TestGeneratorAgent)
+    test_generator.run = AsyncMock(return_value=(test_generator_output, 5))
+
+    retry_evaluation = EvaluatorOutput(
+        final_decision="retry",
+        rule_score=0.5,
+        execution_score=1.0,
+        llm_score=0.5,
+        security_score=0.5,
+        maintainability_score=0.5,
+        correctness_score=0.5,
+        final_score=0.5,
+        findings=[],
+        reasons=["Retry required."],
+        retry_feedback="Further improvements are required.",
+    )
+
+    evaluator = Mock(spec=EvaluatorAgent)
+    evaluator.run = AsyncMock(return_value=(retry_evaluation, 5))
+
+    workflow = create_workflow(
+        workflow_config,
+        planner=planner,
+        inspector=inspector,
+        code_writer=code_writer,
+        test_generator=test_generator,
+        evaluator=evaluator,
+    )
+
+    monkeypatch.setattr(
+        "apps.workflows.code_workflow.run_pytest_for_code",
+        AsyncMock(return_value=test_run_result),
+    )
+
+    result = await workflow.run(review_request)
+
+    assert result.status == "failed"
+    assert result.final_decision == "failed"
+    assert result.summary == "Workflow execution failed."
+    assert result.rounds_executed == 2
+
+    step_names = [step.step_name for step in result.steps]
+
+    # Initial workflow and planner execution are preserved.
+    assert "input_router" in step_names
+    assert "planner" in step_names
+
+    # Round 1 completed successfully before the retry.
+    round_one_steps = [step for step in result.steps if step.round_number == 1]
+
+    assert [step.step_name for step in round_one_steps] == [
+        "inspection.reviewer",
+        "inspection.security_auditor",
+        "code_writer.refactor",
+        "test_generator",
+        "test_runner",
+        "evaluator",
+        "retry_policy",
+    ]
+
+    assert all(step.status == "success" for step in round_one_steps)
+
+    # Round 2 reached the reviewer successfully.
+    round_two_reviewer = [
+        step
+        for step in result.steps
+        if step.round_number == 2 and step.step_name == "inspection.reviewer"
+    ]
+
+    assert len(round_two_reviewer) == 1
+    assert round_two_reviewer[0].status == "success"
+
+    # Round 2 failed at the security auditor.
+    round_two_security = [
+        step
+        for step in result.steps
+        if step.round_number == 2 and step.step_name == "inspection.security_auditor"
+    ]
+
+    assert len(round_two_security) == 1
+    assert round_two_security[0].status == "failed"
+    assert round_two_security[0].detail == "Agent execution failed."
+
+    # The workflow-level failure is also preserved.
+    workflow_steps = [step for step in result.steps if step.step_name == "workflow"]
+
+    assert len(workflow_steps) == 1
+    assert workflow_steps[0].status == "failed"
+    assert workflow_steps[0].detail == "Workflow execution failed."
+
+    # The failed round must not execute downstream agents.
+    assert code_writer.run.await_count == 1
+    assert test_generator.run.await_count == 1
+    assert evaluator.run.await_count == 1

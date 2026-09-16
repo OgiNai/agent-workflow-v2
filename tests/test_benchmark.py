@@ -344,9 +344,11 @@ def test_benchmark_report_averages_token_usage() -> None:
                 step_type="agent",
                 status="success",
                 metadata={
-                    "prompt_tokens": 100,
-                    "completion_tokens": 50,
-                    "total_tokens": 150,
+                    "llm_usage": {
+                        "prompt_tokens": 100,
+                        "completion_tokens": 50,
+                        "total_tokens": 150,
+                    }
                 },
             ),
             WorkflowStepTrace(
@@ -354,9 +356,11 @@ def test_benchmark_report_averages_token_usage() -> None:
                 step_type="agent",
                 status="success",
                 metadata={
-                    "prompt_tokens": 200,
-                    "completion_tokens": 100,
-                    "total_tokens": 300,
+                    "llm_usage": {
+                        "prompt_tokens": 200,
+                        "completion_tokens": 100,
+                        "total_tokens": 300,
+                    }
                 },
             ),
         ],

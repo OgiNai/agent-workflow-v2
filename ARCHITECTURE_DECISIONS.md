@@ -14,4 +14,5 @@
 
   Raw exception details must not be included in ReviewResponse, WorkflowRun summaries, or WorkflowStepTrace details. Safe, application-generated descriptions such as "Agent execution failed." may be exposed.
 
-- 
+- A workflow failure at any retry round must persist all successfully completed steps from previous rounds and the current round's failed step before returning the failed workflow state.
+
