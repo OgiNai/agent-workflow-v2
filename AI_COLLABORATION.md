@@ -108,8 +108,7 @@ Reviewer (retry loop)
 
 * Planner-first architecture.
 * Current planner remains deterministic.
-* LLM-powered planner is scheduled for Milestone 5.
-* LLM planner must preserve the existing PlannerOutput schema.
+* If implemented LLM planner must preserve the existing PlannerOutput schema.
 * Deterministic planner remains available behind a feature flag.
 
 ---
@@ -266,7 +265,7 @@ The AI assistant has standing permission to perform read-only repository inspect
 * Inspect their contents before proposing or generating code.
 * Use the existing implementation as the basis for all changes.
 
-Repository inspection is considered an implicit part of every implementation task and does not require separate user approval.
+Repository inspection is considered an implicit part of every implementation task and does not require separate user approval or notification. 
 
 Only request user input when:
 

@@ -13,6 +13,7 @@ from apps.agents.test_generator_agent import TestGeneratorAgent
 from apps.core.constants import DEFAULT_MAX_ROUNDS
 from apps.core.workflow_config import WorkflowConfig
 from apps.database.session import close_database_engine
+from apps.database.unit_of_work import UnitOfWork
 from apps.llm.llm_exceptions import LLMGenerationError
 from apps.schemas.agent_outputs import (
     CodeWriterOutput,
@@ -182,16 +183,14 @@ async def test_llm_failure_marks_workflow_failed(
     assert result.status == "failed"
     assert result.final_decision == "failed"
     assert result.summary == "Workflow execution failed."
-    assert internal_error not in result.summary
 
     workflow_steps = [step for step in result.steps if step.step_name == "planner"]
     assert len(workflow_steps) == 1
     assert workflow_steps[0].status == "failed"
 
-    failed_steps = [step for step in result.steps if step.status == "failed"]
-    assert failed_steps
-    assert failed_steps[-1].detail == "Agent execution failed."
-    assert internal_error not in failed_steps[-1].detail
+    planner_step = next(step for step in result.steps if step.step_name == "planner")
+    assert planner_step.status == "failed"
+    assert planner_step.detail == "Agent execution failed."
 
 
 @pytest.mark.anyio
@@ -225,19 +224,12 @@ async def test_unexpected_agent_failure_marks_workflow_failed(
     assert result.final_decision == "failed"
     assert result.summary == "Workflow execution failed."
 
-    assert internal_error not in result.summary
-
     reviewer_steps = [
         step for step in result.steps if step.step_name == "inspection.reviewer"
     ]
-
     assert len(reviewer_steps) == 1
     assert reviewer_steps[0].status == "failed"
-
-    failed_steps = [step for step in result.steps if step.status == "failed"]
-    assert failed_steps
-    assert failed_steps[-1].detail == "Agent execution failed."
-    assert internal_error not in failed_steps[-1].detail
+    assert reviewer_steps[0].detail == "Agent execution failed."
 
 
 @pytest.mark.anyio
@@ -296,19 +288,13 @@ async def test_test_runner_failure_marks_workflow_failed(
     assert result.final_decision == "failed"
     assert result.summary == "Workflow execution failed."
 
-    assert internal_error not in result.summary
-
     test_runner_steps = [
         step for step in result.steps if step.step_name == "test_runner"
     ]
 
     assert len(test_runner_steps) == 1
     assert test_runner_steps[0].status == "failed"
-
-    failed_steps = [step for step in result.steps if step.status == "failed"]
-    assert failed_steps
-    assert failed_steps[-1].detail == "Test runner execution failed."
-    assert internal_error not in failed_steps[-1].detail
+    assert test_runner_steps[0].detail == "Test runner execution failed."
 
 
 @pytest.mark.anyio
@@ -408,3 +394,38 @@ async def test_successful_workflow_still_returns_completed(
     assert result.rounds_executed == 1
 
     assert all(step.status != "failed" for step in result.steps)
+
+
+@pytest.mark.anyio
+async def test_failed_workflow_is_persisted_with_sanitized_summary(
+    cleanup_database_engine,
+    workflow_config: WorkflowConfig,
+    review_request: ReviewRequest,
+    planner_output: PlannerOutput,
+):
+    planner = Mock(spec=PlannerAgent)
+    planner.run = AsyncMock(return_value=(planner_output, 5))
+
+    internal_error = "database failure: postgresql://user:secret@internal-db:5432/app"
+    inspector = Mock(spec=InspectionAgent)
+    inspector.run = AsyncMock(side_effect=RuntimeError(internal_error))
+
+    workflow = create_workflow(
+        workflow_config,
+        planner=planner,
+        inspector=inspector,
+    )
+
+    result = await workflow.run(review_request)
+
+    assert result.status == "failed"
+    assert result.final_decision == "failed"
+    assert result.summary == "Workflow execution failed."
+
+    async with UnitOfWork() as uow:
+        persisted_workflow = await uow.workflows.get(result.workflow_run_id)
+
+    assert persisted_workflow is not None
+    assert persisted_workflow.status == "failed"
+    assert persisted_workflow.final_decision == "failed"
+    assert persisted_workflow.summary == "Workflow execution failed."
