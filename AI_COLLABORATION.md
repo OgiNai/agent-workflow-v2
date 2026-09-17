@@ -155,28 +155,61 @@ The workflow must remain persistence-agnostic.
 
 Work on exactly one milestone (or implementation step) at a time.
 
-Read the project file structure and PROJECT_PLAN.md before making suggestions.
-
-Maintain the same coding standards and architecture already established in the project.
-
 For each implementation step:
 
-1. Determine the relevant repository files.
-2. Fetch and inspect those files.
-3. Identify existing functionality.
-4. Avoid duplicating work.
-5. Ask for explicit approval for any important design decisions before implementation.
-6. Explain only architectural decisions requiring approval.
-7. Generate the complete contents of every new or modified file directly in the chat.
-8. Clearly separate new files from modified files.
-9. Explain why each file changed.
-10. The user is responsible for copying the generated files into the local repository, testing them, and committing the changes.
-11. Wait until the changes have been integrated and tested before proceeding.
+1. Read the content for the current step in PROJECT_PLAN.md.
+
+2. Determine the repository areas potentially affected by the step, including:
+   - application code directly involved in the feature;
+   - schemas, models, interfaces, and shared types used by that code;
+   - repositories, persistence, transactions, and database models involved in the data flow;
+   - API routes, dependencies, and application wiring involved at the boundary;
+   - existing tests covering the affected behavior;
+   - configuration, migrations, utilities, or infrastructure that may constrain the implementation;
+   - documentation containing architectural decisions or established conventions relevant to the step.
+
+3. Fetch and inspect all relevant existing files before planning or proposing implementation changes.
+   - Do not infer the structure, fields, method names, constructor signatures, interfaces, or behavior of a repository component without inspecting its source.
+   - Trace important dependencies across module boundaries rather than inspecting only the file where a change appears to originate.
+   - When adding or modifying tests, inspect the implementation under test, its dependencies, and existing tests/helpers that establish project conventions.
+   - Prefer repository source over assumptions, memory, or generic framework patterns when determining how the project currently works.
+
+4. Identify and document existing functionality and integration points.
+   - Determine what already exists and should be reused.
+   - Identify relevant abstractions, dependency-injection seams, persistence boundaries, error-handling behavior, and test fixtures/helpers.
+   - Identify interactions that could be affected even if the corresponding files will not ultimately be modified.
+
+5. Compose a detailed action plan based on:
+   - the existing repository implementation;
+   - the inspected dependency/integration points;
+   - existing tests and test conventions;
+   - the current step in PROJECT_PLAN.md;
+   - relevant decisions in ARCHITECTURE_DECISIONS.md.
+   
+   The plan must be based on inspected repository code, not inferred or assumed interfaces.
+
+6. Present that plan along with a brief explanation of the goals of that step.
+
+7. Explain architectural decisions requiring approval.
+
+8. Ask for explicit approval for any important design decisions before implementation.
+
+9. Generate the complete contents of every new or modified file directly in the chat.
+   - Generated code must match the interfaces, schemas, constructors, dependencies, and conventions verified during repository inspection.
+   - Do not invent repository APIs or fields when the existing implementation can be inspected.
+
+10. Clearly separate new files from modified files.
+
+11. The user is responsible for copying the generated files into the local repository, testing them, and committing the changes.
+
+12. Wait until the changes have been integrated and tested before proceeding.
 
 
 ---
 
 # Code Generation Rules
+
+Maintain the same coding standards and architecture already established in the project.
 
 Always return complete files.
 

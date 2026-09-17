@@ -554,3 +554,44 @@ async def test_failure_during_retry_preserves_previous_round_steps(
     assert code_writer.run.await_count == 1
     assert test_generator.run.await_count == 1
     assert evaluator.run.await_count == 1
+
+
+@pytest.mark.anyio
+async def test_failed_workflow_persists_completed_and_failed_agent_steps(
+    cleanup_database_engine,
+    workflow_config: WorkflowConfig,
+    review_request: ReviewRequest,
+    planner_output: PlannerOutput,
+):
+    planner = Mock(spec=PlannerAgent)
+    planner.run = AsyncMock(return_value=(planner_output, 5))
+
+    inspector = Mock(spec=InspectionAgent)
+    inspector.run = AsyncMock(side_effect=RuntimeError("security audit unavailable"))
+
+    workflow = create_workflow(
+        workflow_config,
+        planner=planner,
+        inspector=inspector,
+    )
+
+    result = await workflow.run(review_request)
+
+    async with UnitOfWork() as uow:
+        persisted_workflow = await uow.workflows.get(result.workflow_run_id)
+        persisted_steps = await uow.agent_steps.list_by_workflow(result.workflow_run_id)
+
+    assert persisted_workflow is not None
+    assert persisted_workflow.status == "failed"
+
+    assert [step.agent_name for step in persisted_steps] == [
+        "planner",
+        "inspection.reviewer",
+    ]
+
+    assert [step.status for step in persisted_steps] == [
+        "success",
+        "failed",
+    ]
+
+    assert persisted_steps[1].error == "Agent execution failed."
