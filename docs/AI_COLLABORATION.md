@@ -215,6 +215,10 @@ Always return complete files.
 
 Never return partial patches unless explicitly requested.
 
+Before providing any implementation code, perform a final review of the proposed code against the inspected repository and project conventions.
+
+Do not provide an initial implementation followed by known corrections, caveats, or replacement snippets. The code presented as the implementation must be the reviewed final version and should be directly usable as provided.
+
 When existing files change:
 
 * Return the entire updated file.

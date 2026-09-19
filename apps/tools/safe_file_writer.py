@@ -5,8 +5,6 @@ import time
 from uuid import UUID
 
 from apps.core.constants import ALLOWED_WRITE_EXTENSIONS
-
-# from apps.core.settings import get_auth_settings
 from apps.schemas.tools import ToolResult
 from apps.tools.file_path_helpers import resolve_artifact_path
 

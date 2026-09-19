@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,6 +20,7 @@ from apps.core.constants import DEFAULT_MAX_ROUNDS
 # which does not allow secrets to accidentally appear in logging or tracebacks
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
 shared_config = SettingsConfigDict(
     env_file=ENV_FILE,
     env_file_encoding="utf-8",
@@ -27,6 +29,7 @@ shared_config = SettingsConfigDict(
 
 
 class AuthSettings(BaseSettings):
+    app_env: Literal["development", "test", "production"]
     api_token: SecretStr
     gemini_api_key: SecretStr
     database_url: SecretStr
@@ -36,8 +39,9 @@ class AuthSettings(BaseSettings):
     model_config = shared_config
 
 
-class WorkflowSettings(BaseSettings):
+class WorkflowSettings(BaseSettings, frozen=True):
     workflow_max_rounds: int = DEFAULT_MAX_ROUNDS
+
     # Development only
     workflow_force_retry_rounds: int = 0
     workflow_always_retry: bool = False

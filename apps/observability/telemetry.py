@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-# from collections.abc import Awaitable, Callable
-# from functools import wraps
-from typing import ParamSpec, TypeVar  # Any
-
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
@@ -16,11 +12,7 @@ from opentelemetry.sdk.trace.export import (
     SimpleSpanProcessor,
 )
 
-# from opentelemetry.trace import SpanKind, Status, StatusCode
 from apps.core.settings import get_telemetry_settings
-
-P = ParamSpec("P")
-R = TypeVar("R")
 
 _tracer_provider: TracerProvider | None = None
 

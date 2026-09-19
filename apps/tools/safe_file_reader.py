@@ -2,10 +2,7 @@
 
 import time
 
-# from pathlib import Path
 from apps.core.constants import ALLOWED_READ_EXTENSIONS, MAX_FILE_SIZE_BYTES
-
-# from apps.core.settings import get_auth_settings
 from apps.schemas.tools import ToolResult
 from apps.tools.file_path_helpers import resolve_project_file_path
 

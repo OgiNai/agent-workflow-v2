@@ -24,3 +24,10 @@
 The standard automated test suite must be deterministic and runnable without external LLM access. Workflow and API tests use dependency injection and mocks to isolate external LLM/provider dependencies while exercising the application's real workflow, persistence, and API boundaries.
 
 LLM-dependent acceptance or smoke tests, if introduced later, are separate from the standard test suite and are not required for normal CI/test-suite execution.
+
+
+- Environment Configuration
+
+APP_ENV identifies the runtime environment as one of development, test, or production.
+
+The application uses the same configuration models across all environments. Environment-specific behavior is controlled by supplying different configuration values rather than maintaining separate development, test, and production settings classes.
