@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import pytest
+from apps.repositories.unit_of_work import UnitOfWork
 
 from apps.database.models import WorkflowRun
 from apps.database.session import close_database_engine
-from apps.database.unit_of_work import UnitOfWork
 
 
 @pytest.mark.anyio

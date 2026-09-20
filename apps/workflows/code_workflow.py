@@ -20,12 +20,12 @@ from apps.agents.test_generator_agent import TestGeneratorAgent
 from apps.core.settings import get_workflow_settings
 from apps.core.workflow_config import WorkflowConfig
 from apps.database.models import AgentStep, Artifact, WorkflowRun
-from apps.database.unit_of_work import UnitOfWork
 from apps.evals.rule_based import calculate_rule_score
 from apps.evals.scoring import calculate_execution_score
 from apps.llm.gemini_client import get_last_llm_usage
 from apps.llm.prompts import PROMPT_VERSIONS
 from apps.observability.telemetry import get_tracer
+from apps.repositories.unit_of_work import UnitOfWork
 from apps.schemas.agent_outputs import EvaluatorOutput
 from apps.schemas.requests import ReviewRequest
 from apps.schemas.responses import ReviewResponse
@@ -128,12 +128,10 @@ class CodeWorkflow:
                     input_data={
                         "instruction": router_result.instruction,
                         "task_type": router_result.task_type,
-                        # "max_rounds": self.workflow_config.max_rounds,
                     },
                     runner=partial(
                         self.planner.run,
                         router_result,
-                        # self.workflow_config.max_rounds,
                     ),
                 )
                 step_order += 1

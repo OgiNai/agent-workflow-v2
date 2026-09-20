@@ -177,12 +177,13 @@ async def test_persisted_workflow_state_does_not_expose_configuration_secrets(
 ) -> None:
     from unittest.mock import AsyncMock
 
+    from apps.repositories.unit_of_work import UnitOfWork
+
     from apps.agents.inspection_agent import InspectionAgent
     from apps.agents.planner_agent import PlannerAgent
     from apps.core.constants import DEFAULT_MAX_ROUNDS
     from apps.core.workflow_config import WorkflowConfig
     from apps.database.session import close_database_engine
-    from apps.database.unit_of_work import UnitOfWork
     from apps.schemas.agent_outputs import PlannerOutput
     from apps.schemas.requests import ReviewRequest
     from apps.workflows.code_workflow import CodeWorkflow

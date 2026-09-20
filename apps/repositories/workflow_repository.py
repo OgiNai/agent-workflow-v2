@@ -18,7 +18,6 @@ class WorkflowRepository:
         """Persist a new workflow run."""
         self._session.add(workflow)
         await self._session.flush()
-        # await self._session.refresh(workflow)
         return workflow
 
     async def get(self, workflow_id: uuid.UUID) -> WorkflowRun | None:
@@ -38,7 +37,6 @@ class WorkflowRepository:
         to the current session.
         """
         await self._session.flush()
-        # await self._session.refresh(workflow)
         return workflow
 
     async def delete(self, workflow: WorkflowRun) -> None:

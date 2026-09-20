@@ -4,6 +4,7 @@ import logging
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from apps.repositories.unit_of_work import UnitOfWork
 
 from apps.agents.code_writer_agent import CodeWriterAgent
 from apps.agents.evaluator_agent import EvaluatorAgent
@@ -13,7 +14,6 @@ from apps.agents.test_generator_agent import TestGeneratorAgent
 from apps.core.constants import DEFAULT_MAX_ROUNDS
 from apps.core.workflow_config import WorkflowConfig
 from apps.database.session import close_database_engine
-from apps.database.unit_of_work import UnitOfWork
 from apps.llm.llm_exceptions import LLMGenerationError
 from apps.schemas.agent_outputs import (
     CodeWriterOutput,

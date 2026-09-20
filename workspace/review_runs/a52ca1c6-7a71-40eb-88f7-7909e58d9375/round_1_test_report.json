@@ -1,0 +1,64 @@
+{
+  "status": "passed",
+  "tests_total": 7,
+  "tests_passed": 7,
+  "tests_failed": 0,
+  "tests_skipped": 0,
+  "tests_xfailed": 0,
+  "tests_xpassed": 0,
+  "duration_ms": 1763,
+  "exit_code": 0,
+  "tests": [
+    {
+      "nodeid": "test_solution.py::test_div_integers",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_div_floats",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_div_negative",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_div_zero_raises_error",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_div_zero_float",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_div_large_numbers",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    },
+    {
+      "nodeid": "test_solution.py::test_div_type_consistency",
+      "outcome": "passed",
+      "duration_ms": 2,
+      "failure_message": null,
+      "traceback": null
+    }
+  ],
+  "stdout": ".......                                                                  [100%]\n7 passed in 0.07s\n",
+  "stderr": ""
+}

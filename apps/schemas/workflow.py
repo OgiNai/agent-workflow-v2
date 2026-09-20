@@ -18,7 +18,6 @@ class RouterResult(BaseModel):
     code_available: bool
     code: str | None = None
     source_path: str | None = None
-    # original_content: str | None = None
 
 
 class WorkflowPlan(BaseModel):
@@ -28,7 +27,6 @@ class WorkflowPlan(BaseModel):
     requires_generation: bool
     requires_refactor: bool = True
     requires_tests: bool = True
-    # max_rounds: int
     steps: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 

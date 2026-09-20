@@ -18,7 +18,6 @@ class AgentStepRepository:
         """Persist a new agent step."""
         self._session.add(agent_step)
         await self._session.flush()
-        # await self._session.refresh(agent_step)
         return agent_step
 
     async def list_by_workflow(

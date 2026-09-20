@@ -5,7 +5,6 @@ import time
 
 from opentelemetry.trace import Status, StatusCode
 
-# from typing import Literal
 from apps.observability.telemetry import get_tracer
 from apps.schemas.requests import ReviewRequest
 from apps.schemas.workflow import ResolvedTaskType, RouterResult
@@ -20,23 +19,6 @@ def _extract_markdown_code(text: str) -> str | None:
     if not match:
         return None
     return match.group(1).strip()
-
-
-# def _looks_like_python_code(text: str) -> bool:
-#    """Small heuristic; explicit request fields should be preferred over this."""
-#    stripped = text.strip()
-#    if "\n" in stripped and any(token in stripped for token in ("def ", "class ", "import ", "from ", "return ")):
-#        return True
-#    return stripped.startswith(("def ", "class ", "import ", "from ", "@"))
-
-
-# def _resolve_task_type(request: ReviewRequest, resolved_input_type: str) -> Literal["generate", "review_refactor"]:
-#    if request.task_type != "auto":
-#        return request.task_type
-#
-#    if resolved_input_type in {"inline_code", "file_path"}:
-#        return "review_refactor"
-#    return "generate"
 
 
 def route_input(request: ReviewRequest) -> RouterResult:
