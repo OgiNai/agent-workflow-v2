@@ -1,5 +1,6 @@
 - planner will be deterministic in the beginning and become an LLM agent at later stage. When   that happens instructions to agents within the retry loop will be tailored
 
+---
 
 - Externally accessible failure information is sanitized. API responses and persisted workflow/step traces expose only controlled, application-generated failure descriptions. Raw exception messages and tracebacks remain internal to logging and telemetry.
 
@@ -15,19 +16,28 @@
 
   Raw exception details must not be included in ReviewResponse, WorkflowRun summaries, or WorkflowStepTrace details. Safe, application-generated descriptions such as "Agent execution failed." may be exposed.
 
+---
 
 - A workflow failure at any retry round must persist all successfully completed steps from previous rounds and the current round's failed step before returning the failed workflow state.
 
+---
 
-- Automated Test Suite Independence:
+# Automated Test Suite Independence:
 
 The standard automated test suite must be deterministic and runnable without external LLM access. Workflow and API tests use dependency injection and mocks to isolate external LLM/provider dependencies while exercising the application's real workflow, persistence, and API boundaries.
 
 LLM-dependent acceptance or smoke tests, if introduced later, are separate from the standard test suite and are not required for normal CI/test-suite execution.
 
+---
 
-- Environment Configuration
+# Environment Configuration
 
 APP_ENV identifies the runtime environment as one of development, test, or production.
 
 The application uses the same configuration models across all environments. Environment-specific behavior is controlled by supplying different configuration values rather than maintaining separate development, test, and production settings classes.
+
+---
+
+# Generated-code execution security boundary
+
+Generated Python code is currently executed in a temporary working directory with timeout control, but without OS/container-level sandboxing. Therefore generated-code execution must be treated as untrusted code execution and is not considered securely isolated from the application host. Strong isolation is a future deployment/execution-boundary concern.

@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import sys
 import tempfile
 import time
@@ -37,6 +38,10 @@ async def run_pytest_for_code(
             solution_path.write_text(code, encoding="utf-8")
             tests_path.write_text(tests, encoding="utf-8")
 
+            process_env = {
+                "PATH": os.environ.get("PATH", ""),
+            }
+
             try:
                 process = await asyncio.create_subprocess_exec(
                     sys.executable,
@@ -47,6 +52,7 @@ async def run_pytest_for_code(
                     "--json-report",
                     f"--json-report-file={report_path}",
                     cwd=temp_path,
+                    env=process_env,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )

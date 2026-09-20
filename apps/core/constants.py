@@ -12,6 +12,11 @@ ALLOWED_READ_EXTENSIONS: Final[set[str]] = {
 }
 ALLOWED_WRITE_EXTENSIONS: Final[set[str]] = {".py", ".txt", ".md", ".json"}
 MAX_FILE_SIZE_BYTES: Final[int] = 200_000
+
+MAX_INSTRUCTION_LENGTH: Final[int] = 10_000
+MAX_INLINE_CODE_LENGTH: Final[int] = 200_000
+MAX_FILE_PATH_LENGTH: Final[int] = 4_096
+
 DEFAULT_MAX_ROUNDS: Final[int] = 2
 MAX_ROUNDS_LIMIT: Final[int] = 5
 WORKSPACE_DIR_NAME: Final[str] = "workspace"

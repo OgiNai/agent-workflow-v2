@@ -4,30 +4,38 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from apps.core.constants import MAX_ROUNDS_LIMIT
+from apps.core.constants import (
+    MAX_FILE_PATH_LENGTH,
+    MAX_INLINE_CODE_LENGTH,
+    MAX_INSTRUCTION_LENGTH,
+    MAX_ROUNDS_LIMIT,
+)
 
 TaskType = Literal["auto", "generate", "review_refactor"]
-# InputType = Literal["auto", "inline_code", "file_path", "natural_language"]
 
 
 class ReviewRequest(BaseModel):
     """Unified request for code generation, review, refactoring, and repair workflows."""
 
     task_type: TaskType = "auto"
-    # input_type: InputType = "auto"
     instruction: str = Field(
         ...,
         min_length=1,
+        max_length=MAX_INSTRUCTION_LENGTH,
         description=(
             "Natural-language feature request or instructions "
             "for reviewing/refactoring existing code."
         ),
     )
     code: str | None = Field(
-        default=None, description="Existing source code supplied inline."
+        default=None,
+        max_length=MAX_INLINE_CODE_LENGTH,
+        description="Existing source code supplied inline.",
     )
     file_path: str | None = Field(
-        default=None, description="Path to an existing source file."
+        default=None,
+        max_length=MAX_FILE_PATH_LENGTH,
+        description="Path to an existing source file.",
     )
     max_rounds: int | None = Field(default=None, ge=1, le=MAX_ROUNDS_LIMIT)
     save_artifacts: bool = True
