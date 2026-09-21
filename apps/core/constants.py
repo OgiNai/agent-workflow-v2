@@ -2,7 +2,7 @@
 
 from typing import Final
 
-ALLOWED_READ_EXTENSIONS: Final[set[str]] = {
+ALLOWED_READ_EXTENSIONS: Final[frozenset[str]] = {
     ".py",
     ".txt",
     ".md",
@@ -10,7 +10,7 @@ ALLOWED_READ_EXTENSIONS: Final[set[str]] = {
     ".yaml",
     ".yml",
 }
-ALLOWED_WRITE_EXTENSIONS: Final[set[str]] = {".py", ".txt", ".md", ".json"}
+ALLOWED_WRITE_EXTENSIONS: Final[frozenset[str]] = {".py", ".txt", ".md", ".json"}
 MAX_FILE_SIZE_BYTES: Final[int] = 200_000
 
 MAX_INSTRUCTION_LENGTH: Final[int] = 10_000

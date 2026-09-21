@@ -16,6 +16,7 @@ from apps.llm.gemini_client import (
 
 SECRET_API_TOKEN = "api-token-secret-for-test"
 SECRET_GEMINI_KEY = "gemini-api-key-secret-for-test"
+SECRET_GITHUB_TOKEN = "github-token-secret-for-test"
 SECRET_DATABASE_URL = (
     "postgresql+asyncpg://test-user:database-password-secret@example.internal:5432/test"
 )
@@ -26,6 +27,7 @@ def make_auth_settings() -> AuthSettings:
         app_env="test",
         api_token=SECRET_API_TOKEN,
         gemini_api_key=SECRET_GEMINI_KEY,
+        github_token=SECRET_GITHUB_TOKEN,
         database_url=SECRET_DATABASE_URL,
         debug=False,
         project_path="/tmp/project",
@@ -42,6 +44,7 @@ def test_secret_settings_are_masked_in_string_representations(
 
     assert SECRET_API_TOKEN not in rendered
     assert SECRET_GEMINI_KEY not in rendered
+    assert SECRET_GITHUB_TOKEN not in rendered
     assert SECRET_DATABASE_URL not in rendered
     assert "**********" in rendered
 
@@ -168,6 +171,7 @@ async def test_configuration_secrets_do_not_reach_api_error_response(
     assert response.status_code == 500
     assert SECRET_API_TOKEN not in response.text
     assert SECRET_GEMINI_KEY not in response.text
+    assert SECRET_GITHUB_TOKEN not in response.text
     assert SECRET_DATABASE_URL not in response.text
 
 
@@ -177,13 +181,12 @@ async def test_persisted_workflow_state_does_not_expose_configuration_secrets(
 ) -> None:
     from unittest.mock import AsyncMock
 
-    from apps.repositories.unit_of_work import UnitOfWork
-
     from apps.agents.inspection_agent import InspectionAgent
     from apps.agents.planner_agent import PlannerAgent
     from apps.core.constants import DEFAULT_MAX_ROUNDS
     from apps.core.workflow_config import WorkflowConfig
     from apps.database.session import close_database_engine
+    from apps.repositories.unit_of_work import UnitOfWork
     from apps.schemas.agent_outputs import PlannerOutput
     from apps.schemas.requests import ReviewRequest
     from apps.workflows.code_workflow import CodeWorkflow
@@ -242,6 +245,7 @@ async def test_persisted_workflow_state_does_not_expose_configuration_secrets(
 
         assert SECRET_API_TOKEN not in persisted_text
         assert SECRET_GEMINI_KEY not in persisted_text
+        assert SECRET_GITHUB_TOKEN not in persisted_text
         assert SECRET_DATABASE_URL not in persisted_text
     finally:
         await close_database_engine()

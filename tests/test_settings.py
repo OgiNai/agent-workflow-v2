@@ -8,8 +8,6 @@ from pydantic import ValidationError
 from apps.core.settings import (
     AuthSettings,
     WorkflowSettings,
-    # get_auth_settings,
-    # get_workflow_settings,
 )
 
 
@@ -19,6 +17,7 @@ def test_auth_settings_load_environment_configuration(
     monkeypatch.setenv("APP_ENV", "test")
     monkeypatch.setenv("API_TOKEN", "test-api-token")
     monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-github-token")
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql+asyncpg://user:password@localhost/test_db",
@@ -31,6 +30,7 @@ def test_auth_settings_load_environment_configuration(
     assert settings.app_env == "test"
     assert settings.api_token.get_secret_value() == "test-api-token"
     assert settings.gemini_api_key.get_secret_value() == "test-gemini-key"
+    assert settings.github_token.get_secret_value() == "test-github-token"
     assert (
         settings.database_url.get_secret_value()
         == "postgresql+asyncpg://user:password@localhost/test_db"
@@ -47,6 +47,7 @@ def test_auth_settings_accepts_supported_environments(
     monkeypatch.setenv("APP_ENV", environment)
     monkeypatch.setenv("API_TOKEN", "test-api-token")
     monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-github-token")
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql+asyncpg://user:password@localhost/test_db",
@@ -65,6 +66,7 @@ def test_auth_settings_rejects_unknown_environment(
     monkeypatch.setenv("APP_ENV", "staging")
     monkeypatch.setenv("API_TOKEN", "test-api-token")
     monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-github-token")
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql+asyncpg://user:password@localhost/test_db",
@@ -74,6 +76,24 @@ def test_auth_settings_rejects_unknown_environment(
 
     with pytest.raises(ValidationError):
         AuthSettings()
+
+
+def test_auth_settings_requires_github_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.setenv("API_TOKEN", "test-api-token")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+asyncpg://user:password@localhost/test_db",
+    )
+    monkeypatch.setenv("DEBUG", "false")
+    monkeypatch.setenv("PROJECT_PATH", "/tmp/test-project")
+
+    with pytest.raises(ValidationError):
+        AuthSettings(_env_file=None)
 
 
 def test_workflow_settings_are_immutable() -> None:

@@ -41,3 +41,19 @@ The application uses the same configuration models across all environments. Envi
 # Generated-code execution security boundary
 
 Generated Python code is currently executed in a temporary working directory with timeout control, but without OS/container-level sandboxing. Therefore generated-code execution must be treated as untrusted code execution and is not considered securely isolated from the application host. Strong isolation is a future deployment/execution-boundary concern.
+
+---
+
+# GitHub Integration Boundary
+
+GitHub is treated as an external infrastructure adapter and is intentionally kept separate from the core workflow and application/domain logic. `CodeWorkflow` must remain independent of GitHub-specific concepts. The initial GitHub integration processes supported changed files as independent workflow inputs. Each supported file can therefore have its own `workflow_run_id`, persistence history, evaluation, and failure boundary. Unsupported file types are filtered by the GitHub integration and are not treated as workflow failures. 
+
+ReviewRequest is composed by content of changed file as code field and the cnanges (PR/diff) in the review_context field containing an application-level context model. Context models contain external or task-specific information required to perform specific operation and must remain independent of external provider types. For example, PRContext must not contain GitHubPullRequest or GitHubChangedFile objects. The GitHub integration maps GitHub-specific models into the application-level context before creating a ReviewRequest.
+
+GitHub authentication and credentials remain inside the integration/infrastructure boundary and must never be passed into `CodeWorkflow` or persisted as workflow data.
+
+
+
+---
+
+

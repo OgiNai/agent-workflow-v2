@@ -32,6 +32,7 @@ class AuthSettings(BaseSettings):
     app_env: Literal["development", "test", "production"]
     api_token: SecretStr
     gemini_api_key: SecretStr
+    github_token: SecretStr
     database_url: SecretStr
     debug: bool
     project_path: Path

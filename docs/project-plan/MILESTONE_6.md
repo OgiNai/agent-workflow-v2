@@ -19,15 +19,19 @@
 Target architecture:
 
 ```text
+GitHub API
+        ↓
 GitHub Adapter
-      ↓
+        ↓
 ReviewRequest
-      ↓
+        ↓
 CodeWorkflow
-      ↓
+        ↓
 ReviewResponse
-      ↓
+        ↓
 GitHub Adapter
+        ↓
+GitHub API
 ```
 
 ## 6.2 — GitHub Authentication
@@ -50,6 +54,8 @@ Implement isolated GitHub operations for:
 * Changed-file discovery where required.
 
 Map GitHub-specific responses into application-level models.
+
+Use the existing httpx2 dependency rather than introducing PyGithub.
 
 Do not allow GitHub SDK/API types to leak into the workflow layer.
 
