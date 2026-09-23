@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, TypeAlias
+
+ChangedFileStatus: TypeAlias = Literal[
+    "added",
+    "modified",
+    "deleted",
+    "renamed",
+    "copied",
+]
 
 
 @dataclass(frozen=True)
@@ -39,7 +47,7 @@ class GitHubChangedFile:
     """A file changed by a GitHub pull request."""
 
     path: str
-    status: Literal["added", "modified", "removed", "renamed", "copied"]
+    status: ChangedFileStatus
     additions: int
     deletions: int
     changes: int
@@ -55,12 +63,3 @@ class GitHubFileContent:
     content: str
     ref: str
     sha: str
-
-
-@dataclass(frozen=True)
-class GitHubPullRequestData:
-    """Complete GitHub data required to prepare a PR for review."""
-
-    pull_request: GitHubPullRequest
-    changed_files: tuple[GitHubChangedFile, ...]
-    file_contents: tuple[GitHubFileContent, ...]
