@@ -7,6 +7,7 @@ import base64
 import httpx2
 import pytest
 
+from apps.core.settings import get_auth_settings
 from apps.integrations.github.client import GitHubRESTClient
 from apps.integrations.github.errors import (
     GitHubAPIError,
@@ -15,7 +16,7 @@ from apps.integrations.github.errors import (
 )
 from apps.integrations.github.models import GitHubPullRequest, GitHubRepository
 
-TOKEN = "github-token-secret-for-test"
+TOKEN = get_auth_settings().github_token.get_secret_value()
 
 REPOSITORY_PAYLOAD = {
     "name": "example-repo",
@@ -240,6 +241,8 @@ async def test_list_pull_request_files_maps_response() -> None:
 
 @pytest.mark.anyio
 async def test_list_pull_request_files_follows_pagination() -> None:
+    from apps.core.constants import PER_PAGE
+
     repository = GitHubRepository(
         owner="example-owner",
         name="example-repo",
@@ -251,12 +254,13 @@ async def test_list_pull_request_files_follows_pagination() -> None:
 
     first_page = [
         {
-            "filename": "apps/example.py",
+            "filename": f"apps/example_{index}.py",
             "status": "modified",
             "additions": 1,
             "deletions": 0,
             "changes": 1,
         }
+        for index in range(PER_PAGE)
     ]
 
     second_page = [
@@ -289,10 +293,9 @@ async def test_list_pull_request_files_follows_pagination() -> None:
         files = await github_client.list_pull_request_files(pull_request)
 
         assert requested_pages == ["1", "2"]
-        assert [file.path for file in files] == [
-            "apps/example.py",
-            "tests/test_example.py",
-        ]
+        assert len(files) == PER_PAGE + 1
+        assert files[0].path == "apps/example_0.py"
+        assert files[-1].path == "tests/test_example.py"
     finally:
         await http_client.aclose()
 
@@ -321,6 +324,7 @@ async def test_get_file_content_decodes_base64_content() -> None:
                 "content": encoded_content,
                 "encoding": "base64",
                 "sha": FILE_SHA,
+                "type": "file",
             },
             request=request,
         )
@@ -509,7 +513,7 @@ async def test_injected_client_is_not_closed_by_github_rest_client() -> None:
     http_client = make_http_client(handler)
     github_client = make_rest_client(http_client)
 
-    await github_client.aclose()
+    await github_client.close()
 
     assert not http_client.is_closed
 

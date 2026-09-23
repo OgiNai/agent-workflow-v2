@@ -61,5 +61,5 @@ class GitHubFileContent:
 
     path: str
     content: str
-    ref: str
-    sha: str
+    ref: str  # the hash signature of the entire PR's branch
+    sha: str  # the hash signature of the current state of the file itself

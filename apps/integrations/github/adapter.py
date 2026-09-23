@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 
 from apps.core.constants import ALLOWED_READ_EXTENSIONS
-from apps.integrations.github.client import GitHubClient
+from apps.integrations.github.client import GitHubRESTClient
 from apps.integrations.github.mapper import build_review_requests
 from apps.integrations.github.models import GitHubPullRequest
 from apps.schemas.requests import ReviewRequest
@@ -14,7 +14,7 @@ from apps.schemas.requests import ReviewRequest
 class GitHubAdapter:
     """Translate GitHub resources into application workflow inputs."""
 
-    def __init__(self, client: GitHubClient) -> None:
+    def __init__(self, client: GitHubRESTClient) -> None:
         self.client = client
 
     async def build_review_requests(
