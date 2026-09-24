@@ -61,25 +61,40 @@ Do not allow GitHub SDK/API types to leak into the workflow layer.
 
 ## 6.4 — Pull Request Review
 
-Support the core GitHub review flow:
+Support the core GitHub pull-request review flow while preserving the existing
+file-level workflow and persistence boundaries.
 
 ```text
-Pull Request
-      ↓
-Changed files
-      ↓
-ReviewRequest
-      ↓
-CodeWorkflow
-      ↓
-Findings / ReviewResponse
+                         GitHub Pull Request
+                                  │
+                 ┌────────────────┴────────────────┐
+                 │                                 │
+           PR metadata                      changed files
+                 │                                 │
+                 └────────────────┬────────────────┘
+                                  ▼
+                              PRContext
+                                  │
+                    ┌─────────────┼─────────────┐
+                    ▼             ▼             ▼
+               ReviewRequest  ReviewRequest  ReviewRequest
+                  file A         file B         file C
+                  code=A         code=B         code=C
+                  context=PR    context=PR    context=PR
+                    │             │             │
+                    ▼             ▼             ▼
+                Workflow A     Workflow B     Workflow C
+                    │             │             │
+                    ▼             ▼             ▼
+               workflow_run   workflow_run   workflow_run
 ```
 
-* Define how multiple changed files are handled.
-* Define file-level workflow boundaries.
-* Preserve workflow-run identity.
-* Persist the resulting workflow history.
-* Ensure unsupported file types are handled safely.
+* Define the PR-level context shared by all per-file review requests. Define PRContext as PR-specific rather than file-specific.
+* Preserve complete current source code for each target file in ReviewRequest.code.
+* Include metadata and diffs for all changed files in PRContext, without duplicating complete source contents across requests.
+* Define how multiple changed files are mapped to independent ReviewRequest instances and workflow runs.
+* Provide PR context to Reviewer and Security Auditor without making CodeWorkflow GitHub-aware.
+* Keep ordinary non-GitHub ReviewRequest instances valid with review_context=None.
 
 ## 6.5 — GitHub Review Comments
 

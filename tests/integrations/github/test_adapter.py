@@ -98,12 +98,39 @@ async def test_build_review_requests_skips_unsupported_file_types(
         changes=2,
         patch=None,
     )
-    github_client.list_pull_request_files.return_value = [unsupported_file]
+    supported_file = GitHubChangedFile(
+        path="app/gallery.py",
+        status="modified",
+        additions=2,
+        deletions=0,
+        changes=2,
+        patch=None,
+    )
+    supported_file_content = "def gallery():\n    pass\n"
+    github_client.list_pull_request_files.return_value = [
+        unsupported_file,
+        supported_file,
+    ]
+    github_client.get_file_content.return_value = supported_file_content
 
     result = await adapter.build_review_requests(pull_request)
 
-    assert result == []
-    github_client.get_file_content.assert_not_awaited()
+    assert len(result) == 1
+    assert result[0].code == supported_file_content
+
+    github_client.get_file_content.assert_awaited_once_with(
+        repository=pull_request.repository,
+        path=supported_file.path,
+        ref=pull_request.head_sha,
+    )
+
+    context = result[0].review_context
+
+    assert context is not None
+    assert context.changed_files == [
+        unsupported_file,
+        supported_file,
+    ]
 
 
 @pytest.mark.anyio
@@ -213,6 +240,24 @@ async def test_build_review_requests_processes_multiple_supported_files(
                 "ref": pull_request.head_sha,
             },
         ),
+    ]
+
+    assert result[0].review_context is result[1].review_context
+
+    context = result[0].review_context
+
+    assert context is not None
+    assert context.pull_request_number == pull_request.number
+    assert context.title == pull_request.title
+    assert context.body == pull_request.body
+    assert context.base_ref == pull_request.base_ref
+    assert context.head_ref == pull_request.head_ref
+    assert context.base_sha == pull_request.base_sha
+    assert context.head_sha == pull_request.head_sha
+
+    assert context.changed_files == [
+        first_file,
+        second_file,
     ]
 
 

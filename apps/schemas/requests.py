@@ -10,6 +10,7 @@ from apps.core.constants import (
     MAX_INSTRUCTION_LENGTH,
     MAX_ROUNDS_LIMIT,
 )
+from apps.schemas.review_context import PRContext
 
 TaskType = Literal["auto", "generate", "review_refactor"]
 
@@ -39,6 +40,7 @@ class ReviewRequest(BaseModel):
     )
     max_rounds: int | None = Field(default=None, ge=1, le=MAX_ROUNDS_LIMIT)
     save_artifacts: bool = True
+    review_context: PRContext | None = None
 
     @model_validator(mode="after")
     def validate_request(self) -> "ReviewRequest":

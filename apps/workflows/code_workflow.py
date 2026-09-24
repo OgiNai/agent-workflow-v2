@@ -165,12 +165,18 @@ class CodeWorkflow:
                         input_data={
                             "instruction": router_result.instruction,
                             "code": candidate.code,
+                            "review_context": (
+                                request.review_context.model_dump(mode="json")
+                                if request.review_context is not None
+                                else None
+                            ),
                         },
                         runner=partial(
                             self.inspector.run,
                             mode="reviewer",
                             instruction=router_result.instruction,
                             code=candidate.code,
+                            review_context=request.review_context,
                         ),
                     )
                     step_order += 1
@@ -184,12 +190,18 @@ class CodeWorkflow:
                         input_data={
                             "instruction": router_result.instruction,
                             "code": candidate.code,
+                            "review_context": (
+                                request.review_context.model_dump(mode="json")
+                                if request.review_context is not None
+                                else None
+                            ),
                         },
                         runner=partial(
                             self.inspector.run,
                             mode="security_auditor",
                             instruction=router_result.instruction,
                             code=candidate.code,
+                            review_context=request.review_context,
                         ),
                     )
                     step_order += 1

@@ -52,8 +52,13 @@ ReviewRequest is composed by content of changed file as code field and the cnang
 
 GitHub authentication and credentials remain inside the integration/infrastructure boundary and must never be passed into `CodeWorkflow` or persisted as workflow data.
 
-
-
 ---
 
+# PRContext is PR-level context
+
+A GitHub pull request may produce multiple independent ReviewRequest instances and corresponding workflow runs—one for each supported changed file. Each ReviewRequest contains the complete current contents of its target file in code, while its review_context references the PR-level PRContext. PRContext represents the context of an entire pull request, not the context of an individual changed file.
+
+PRContext contains pull-request metadata and the complete changed-file manifest, including metadata and diffs for all changed files. This allows Reviewer and Security Auditor agents processing one target file to reason about related changes elsewhere in the same pull request without making CodeWorkflow GitHub-aware.
+
+---
 

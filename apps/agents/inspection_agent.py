@@ -8,6 +8,7 @@ from apps.core.settings import LLMSettings
 from apps.llm.agent_requiremenrs import INSPECTION_REQUIREMENTS
 from apps.llm.prompts import INSPECTION_PROMPTS, PROMPT_VERSIONS
 from apps.schemas.agent_outputs import Finding, ReviewerOutput, SecurityAuditOutput
+from apps.schemas.review_context import PRContext
 
 InspectionMode = Literal["reviewer", "security_auditor"]
 
@@ -22,6 +23,7 @@ class InspectionAgent(BaseAgent):
         mode: Literal["reviewer"],
         instruction: str,
         code: str,
+        review_context: PRContext | None = None,
         llm_settings: LLMSettings | None = None,
     ) -> tuple[ReviewerOutput, int]: ...
 
@@ -32,6 +34,7 @@ class InspectionAgent(BaseAgent):
         mode: Literal["security_auditor"],
         instruction: str,
         code: str,
+        review_context: PRContext | None = None,
         llm_settings: LLMSettings | None = None,
     ) -> tuple[SecurityAuditOutput, int]: ...
 
@@ -41,6 +44,7 @@ class InspectionAgent(BaseAgent):
         mode: InspectionMode,
         instruction: str,
         code: str,
+        review_context: PRContext | None = None,
         llm_settings: LLMSettings | None = None,
     ) -> tuple[ReviewerOutput | SecurityAuditOutput, int]:
         schema = ReviewerOutput if mode == "reviewer" else SecurityAuditOutput
@@ -48,6 +52,11 @@ class InspectionAgent(BaseAgent):
             "mode": mode,
             "instruction": instruction,
             "candidate_code": code,
+            "review_context": (
+                review_context.model_dump(mode="json")
+                if review_context is not None
+                else None
+            ),
             "requirements": INSPECTION_REQUIREMENTS,
         }
         result, latency_ms = await self._run_structured(
