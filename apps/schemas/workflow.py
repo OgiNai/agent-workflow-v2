@@ -40,7 +40,7 @@ class CandidateCode(BaseModel):
 
 
 class WorkflowStepTrace(BaseModel):
-    """In-memory trace for Milestone 1. This maps to agent_steps/tool_calls later."""
+    """In-memory trace that maps to agent_steps/tool_calls."""
 
     step_name: str
     step_type: Literal["agent", "tool", "workflow", "evaluation"]

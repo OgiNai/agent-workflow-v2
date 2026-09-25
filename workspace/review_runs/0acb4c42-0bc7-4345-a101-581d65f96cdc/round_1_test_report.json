@@ -1,0 +1,14 @@
+{
+  "status": "failed",
+  "tests_total": 0,
+  "tests_passed": 0,
+  "tests_failed": 0,
+  "tests_skipped": 0,
+  "tests_xfailed": 0,
+  "tests_xpassed": 0,
+  "duration_ms": 2076,
+  "exit_code": 2,
+  "tests": [],
+  "stdout": "\n==================================== ERRORS ====================================\n______________________ ERROR collecting test_solution.py _______________________\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/python.py:508: in importtestmodule\n    mod = import_path(\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/pathlib.py:596: in import_path\n    importlib.import_module(module_name)\n/usr/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<frozen importlib._bootstrap>:1206: in _gcd_import\n    ???\n<frozen importlib._bootstrap>:1178: in _find_and_load\n    ???\n<frozen importlib._bootstrap>:1149: in _find_and_load_unlocked\n    ???\n<frozen importlib._bootstrap>:690: in _load_unlocked\n    ???\n/home/oginaidenov/PythonProjects/agent-workflow-v2/.venv/lib/python3.11/site-packages/_pytest/assertion/rewrite.py:188: in exec_module\n    exec(co, module.__dict__)\ntest_solution.py:2: in <module>\n    from solution import div\nE     File \"/tmp/agent_review_tests_0epkg76q/solution.py\", line 1\nE       def div(a: float, b: float) -> float: \"\"\"Divides two numbers and raises ValueError if the divisor is zero.\"\"\" if b == 0: raise ValueError(\"The divisor 'b' cannot be zero.\") return a / b\nE                                                                                                                              ^\nE   SyntaxError: invalid syntax\n=========================== short test summary info ============================\nERROR test_solution.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.61s\n",
+  "stderr": ""
+}

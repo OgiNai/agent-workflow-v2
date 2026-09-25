@@ -1,0 +1,1 @@
+def div(a: float, b: float) -> float: """Divides two numbers and raises ValueError if the divisor is zero.""" if b == 0: raise ValueError("The divisor 'b' cannot be zero.") return a / b

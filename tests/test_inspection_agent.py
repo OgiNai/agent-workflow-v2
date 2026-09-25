@@ -1,5 +1,11 @@
+from unittest.mock import AsyncMock
+
+import pytest
+
 from apps.agents.inspection_agent import InspectionAgent
+from apps.integrations.github.models import GitHubChangedFile
 from apps.schemas.agent_outputs import Finding, ReviewerOutput, SecurityAuditOutput
+from apps.schemas.review_context import PRContext
 
 
 def test_reviewer_findings_receive_stable_ids():
@@ -102,3 +108,54 @@ def test_inspection_forces_llm_resolved_status_back_to_unresolved():
     normalized = InspectionAgent._normalize_findings(review)
 
     assert normalized.findings[0].status == "unresolved"
+
+
+@pytest.mark.anyio
+async def test_inspection_agent_includes_review_context_in_payload(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review_context = PRContext(
+        pull_request_number=42,
+        title="Improve validation",
+        body="Improve input validation.",
+        base_ref="main",
+        head_ref="feature/validation",
+        base_sha="base-sha",
+        head_sha="head-sha",
+        changed_files=[
+            GitHubChangedFile(
+                path="apps/example.py",
+                status="modified",
+                additions=2,
+                deletions=1,
+                changes=3,
+                patch="@@ -1 +1 @@",
+            )
+        ],
+    )
+
+    expected_output = ReviewerOutput(
+        summary="No issues found.",
+        findings=[],
+    )
+
+    run_structured = AsyncMock(
+        return_value=(expected_output, 5),
+    )
+
+    agent = InspectionAgent()
+    monkeypatch.setattr(agent, "_run_structured", run_structured)
+
+    result, latency_ms = await agent.run(
+        mode="reviewer",
+        instruction="Review this file.",
+        code="print('hello')",
+        review_context=review_context,
+    )
+
+    assert result == expected_output
+    assert latency_ms == 5
+
+    payload = run_structured.await_args.kwargs["payload"]
+
+    assert payload["review_context"] == review_context.model_dump(mode="json")

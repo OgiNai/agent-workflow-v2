@@ -1,6 +1,6 @@
 """Tests for the GitHub integration adapter."""
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, call
 
 import pytest
 
@@ -106,31 +106,64 @@ async def test_build_review_requests_skips_unsupported_file_types(
         changes=2,
         patch=None,
     )
-    supported_file_content = "def gallery():\n    pass\n"
+    renamed_file = GitHubChangedFile(
+        path="apps/new_name.py",
+        status="renamed",
+        additions=2,
+        deletions=1,
+        changes=3,
+        previous_path="apps/old_name.py",
+        patch="@@ -1 +1 @@",
+    )
+    supported_file_content = GitHubFileContent(
+        path=supported_file.path,
+        content="def gallery():\n    pass\n",
+        ref=pull_request.head_sha,
+        sha="file-sha",
+    )
+    renamed_file_content = GitHubFileContent(
+        path=renamed_file.path,
+        content="def name():\n    pass\n",
+        ref=pull_request.head_sha,
+        sha="file-sha",
+    )
     github_client.list_pull_request_files.return_value = [
         unsupported_file,
         supported_file,
+        renamed_file,
     ]
-    github_client.get_file_content.return_value = supported_file_content
+    github_client.get_file_content.side_effect = [
+        supported_file_content,
+        renamed_file_content,
+    ]
 
     result = await adapter.build_review_requests(pull_request)
 
-    assert len(result) == 1
-    assert result[0].code == supported_file_content
+    assert len(result) == 2
+    assert result[0].code == supported_file_content.content
 
-    github_client.get_file_content.assert_awaited_once_with(
-        repository=pull_request.repository,
-        path=supported_file.path,
-        ref=pull_request.head_sha,
-    )
+    assert github_client.get_file_content.await_count == 2
+    assert github_client.get_file_content.await_args_list == [
+        call(
+            repository=pull_request.repository,
+            path=supported_file.path,
+            ref=pull_request.head_sha,
+        ),
+        call(
+            repository=pull_request.repository,
+            path=renamed_file.path,
+            ref=pull_request.head_sha,
+        ),
+    ]
 
     context = result[0].review_context
 
     assert context is not None
     assert context.changed_files == [
-        unsupported_file,
         supported_file,
+        renamed_file,
     ]
+    assert context.changed_files[1].previous_path == "apps/old_name.py"
 
 
 @pytest.mark.anyio
