@@ -6,9 +6,13 @@ from pathlib import PurePosixPath
 
 from apps.core.constants import ALLOWED_READ_EXTENSIONS
 from apps.integrations.github.client import GitHubRESTClient
-from apps.integrations.github.mapper import build_review_requests
-from apps.integrations.github.models import GitHubPullRequest
+from apps.integrations.github.models import (
+    GitHubChangedFile,
+    GitHubFileContent,
+    GitHubPullRequest,
+)
 from apps.schemas.requests import ReviewRequest
+from apps.schemas.review_context import PRContext
 
 
 class GitHubAdapter:
@@ -45,8 +49,73 @@ class GitHubAdapter:
             for changed_file in supported_files
         ]
 
-        return build_review_requests(
+        review_context = self._build_pr_context(
             pull_request=pull_request,
-            changed_files=supported_files,
-            file_contents=file_contents,
+            changed_files=changed_files,
+        )
+
+        contents_by_path = {
+            file_content.path: file_content for file_content in file_contents
+        }
+
+        return [
+            review_request
+            for supported_file in supported_files
+            if (
+                review_request := self._build_review_request(
+                    pull_request=pull_request,
+                    changed_file=supported_file,
+                    file_content=contents_by_path.get(supported_file.path),
+                    review_context=review_context,
+                )
+            )
+            is not None
+        ]
+
+    @staticmethod
+    def _build_pr_context(
+        *,
+        pull_request: GitHubPullRequest,
+        changed_files: list[GitHubChangedFile],
+    ) -> PRContext:
+        """Build PR-level review context from GitHub pull-request data."""
+        return PRContext(
+            pull_request_number=pull_request.number,
+            title=pull_request.title,
+            body=pull_request.body,
+            base_ref=pull_request.base_ref,
+            head_ref=pull_request.head_ref,
+            base_sha=pull_request.base_sha,
+            head_sha=pull_request.head_sha,
+            changed_files=changed_files,
+        )
+
+    @staticmethod
+    def _build_review_request(
+        *,
+        pull_request: GitHubPullRequest,
+        changed_file: GitHubChangedFile,
+        file_content: GitHubFileContent | None,
+        review_context: PRContext,
+    ) -> ReviewRequest | None:
+        """Map one supported GitHub changed file to a review request."""
+
+        if file_content is None:
+            return None
+
+        instruction = (
+            f"Review and refactor the changes introduced by pull request "
+            f"#{pull_request.number} ({pull_request.title}) in "
+            f"{changed_file.path}. "
+            "Consider the pull request metadata and the complete changed-file "
+            "context provided in review_context when assessing this file. "
+            "Preserve intended behavior and address any correctness, security, "
+            "maintainability, or testing issues identified during the workflow."
+        )
+
+        return ReviewRequest(
+            task_type="review_refactor",
+            instruction=instruction,
+            code=file_content.content,
+            review_context=review_context,
         )

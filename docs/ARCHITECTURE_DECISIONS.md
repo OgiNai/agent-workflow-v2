@@ -48,7 +48,7 @@ Generated Python code is currently executed in a temporary working directory wit
 
 GitHub is treated as an external infrastructure adapter and is intentionally kept separate from the core workflow and application/domain logic. `CodeWorkflow` must remain independent of GitHub-specific concepts. The initial GitHub integration processes supported changed files as independent workflow inputs. Each supported file can therefore have its own `workflow_run_id`, persistence history, evaluation, and failure boundary. Unsupported file types are filtered by the GitHub integration and are not treated as workflow failures. 
 
-ReviewRequest is composed by content of changed file as code field and the cnanges (PR/diff) in the review_context field containing an application-level context model. Context models contain external or task-specific information required to perform specific operation and must remain independent of external provider types. For example, PRContext must not contain GitHubPullRequest or GitHubChangedFile objects. The GitHub integration maps GitHub-specific models into the application-level context before creating a ReviewRequest.
+ReviewRequest is composed by content of changed file as code field and the cnanges (PR/diff) in the review_context field containing an application-level context model. Context models contain external or task-specific information required to perform specific operation and must remain independent of external provider types. 
 
 GitHub authentication and credentials remain inside the integration/infrastructure boundary and must never be passed into `CodeWorkflow` or persisted as workflow data.
 
@@ -57,6 +57,8 @@ GitHub authentication and credentials remain inside the integration/infrastructu
 # PRContext is PR-level context
 
 A GitHub pull request may produce multiple independent ReviewRequest instances and corresponding workflow runs—one for each supported changed file. Each ReviewRequest contains the complete current contents of its target file in code, while its review_context references the PR-level PRContext. PRContext represents the context of an entire pull request, not the context of an individual changed file.
+
+PRContext should contain the representation required by the PR-review task. A separate application-level changed-file model should only be introduced when the application representation differs meaningfully from the provider representation.
 
 PRContext contains pull-request metadata and the complete changed-file manifest, including metadata and diffs for all changed files. This allows Reviewer and Security Auditor agents processing one target file to reason about related changes elsewhere in the same pull request without making CodeWorkflow GitHub-aware.
 
