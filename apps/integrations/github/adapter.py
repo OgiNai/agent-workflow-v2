@@ -223,7 +223,7 @@ class GitHubAdapter:
 
         location = finding.location
 
-        if location is None or location.side != "RIGHT":
+        if location is None:
             return None
 
         line_hunks = cls._parse_right_side_lines(changed_file.patch)
@@ -233,12 +233,8 @@ class GitHubAdapter:
             return None
 
         start_line = location.start_line
-        start_side = location.start_side
 
         if start_line is not None:
-            if start_side not in (None, "RIGHT"):
-                return None
-
             start_hunk = line_hunks.get(start_line)
 
             if start_hunk is None or start_hunk != line_hunk:
@@ -246,9 +242,6 @@ class GitHubAdapter:
 
             if start_line == location.line:
                 start_line = None
-                start_side = None
-            else:
-                start_side = "RIGHT"
 
         return GitHubReviewComment(
             path=path,
@@ -260,7 +253,7 @@ class GitHubAdapter:
             line=location.line,
             side="RIGHT",
             start_line=start_line,
-            start_side=start_side,
+            start_side="RIGHT" if start_line is not None else None,
         )
 
     @staticmethod

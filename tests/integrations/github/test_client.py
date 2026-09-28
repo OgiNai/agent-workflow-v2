@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import json
 
 import httpx2
 import pytest
@@ -14,9 +15,19 @@ from apps.integrations.github.errors import (
     GitHubAuthenticationError,
     GitHubAuthorizationError,
 )
-from apps.integrations.github.models import GitHubPullRequest, GitHubRepository
+from apps.integrations.github.models import (
+    GitHubPullRequest,
+    GitHubRepository,
+    GitHubReviewComment,
+)
 
 TOKEN = get_auth_settings().github_token.get_secret_value()
+
+REPOSITORY = GitHubRepository(
+    owner="example-owner",
+    name="example-repo",
+    default_branch="main",
+)
 
 REPOSITORY_PAYLOAD = {
     "name": "example-repo",
@@ -124,11 +135,6 @@ async def test_get_repository_maps_response() -> None:
 
 @pytest.mark.anyio
 async def test_get_pull_request_maps_response_and_reuses_repository() -> None:
-    repository = GitHubRepository(
-        owner="example-owner",
-        name="example-repo",
-        default_branch="main",
-    )
 
     async def handler(request: httpx2.Request) -> httpx2.Response:
         assert request.method == "GET"
@@ -145,7 +151,7 @@ async def test_get_pull_request_maps_response_and_reuses_repository() -> None:
         github_client = make_rest_client(http_client)
 
         pull_request = await github_client.get_pull_request(
-            repository=repository,
+            repository=REPOSITORY,
             pull_request_number=42,
         )
 
@@ -156,18 +162,13 @@ async def test_get_pull_request_maps_response_and_reuses_repository() -> None:
         assert pull_request.head_ref == "feature/example"
         assert pull_request.base_sha == "base-sha-123"
         assert pull_request.head_sha == "head-sha-456"
-        assert pull_request.repository is repository
+        assert pull_request.repository is REPOSITORY
     finally:
         await http_client.aclose()
 
 
 @pytest.mark.anyio
 async def test_get_pull_request_allows_null_body() -> None:
-    repository = GitHubRepository(
-        owner="example-owner",
-        name="example-repo",
-        default_branch="main",
-    )
 
     payload = {
         **PULL_REQUEST_PAYLOAD,
@@ -187,7 +188,7 @@ async def test_get_pull_request_allows_null_body() -> None:
         github_client = make_rest_client(http_client)
 
         pull_request = await github_client.get_pull_request(
-            repository=repository,
+            repository=REPOSITORY,
             pull_request_number=42,
         )
 
@@ -198,13 +199,8 @@ async def test_get_pull_request_allows_null_body() -> None:
 
 @pytest.mark.anyio
 async def test_list_pull_request_files_maps_response() -> None:
-    repository = GitHubRepository(
-        owner="example-owner",
-        name="example-repo",
-        default_branch="main",
-    )
 
-    pull_request = await _make_pull_request(repository)
+    pull_request = await _make_pull_request(REPOSITORY)
 
     async def handler(request: httpx2.Request) -> httpx2.Response:
         assert request.method == "GET"
@@ -243,13 +239,7 @@ async def test_list_pull_request_files_maps_response() -> None:
 async def test_list_pull_request_files_follows_pagination() -> None:
     from apps.core.constants import PER_PAGE
 
-    repository = GitHubRepository(
-        owner="example-owner",
-        name="example-repo",
-        default_branch="main",
-    )
-
-    pull_request = await _make_pull_request(repository)
+    pull_request = await _make_pull_request(REPOSITORY)
     requested_pages: list[str] = []
 
     first_page = [
@@ -302,11 +292,6 @@ async def test_list_pull_request_files_follows_pagination() -> None:
 
 @pytest.mark.anyio
 async def test_get_file_content_decodes_base64_content() -> None:
-    repository = GitHubRepository(
-        owner="example-owner",
-        name="example-repo",
-        default_branch="main",
-    )
 
     encoded_content = base64.b64encode(FILE_CONTENT.encode()).decode()
 
@@ -335,7 +320,7 @@ async def test_get_file_content_decodes_base64_content() -> None:
         github_client = make_rest_client(http_client)
 
         file_content = await github_client.get_file_content(
-            repository=repository,
+            repository=REPOSITORY,
             path="apps/example.py",
             ref="head-sha-456",
         )
@@ -439,11 +424,6 @@ async def test_malformed_repository_response_raises_github_api_error() -> None:
 
 @pytest.mark.anyio
 async def test_malformed_pull_request_response_raises_github_api_error() -> None:
-    repository = GitHubRepository(
-        owner="example-owner",
-        name="example-repo",
-        default_branch="main",
-    )
 
     async def handler(request: httpx2.Request) -> httpx2.Response:
         return httpx2.Response(
@@ -462,7 +442,7 @@ async def test_malformed_pull_request_response_raises_github_api_error() -> None
 
         with pytest.raises(GitHubAPIError):
             await github_client.get_pull_request(
-                repository=repository,
+                repository=REPOSITORY,
                 pull_request_number=42,
             )
     finally:
@@ -471,11 +451,6 @@ async def test_malformed_pull_request_response_raises_github_api_error() -> None
 
 @pytest.mark.anyio
 async def test_malformed_pull_request_body_raises_github_api_error() -> None:
-    repository = GitHubRepository(
-        owner="example-owner",
-        name="example-repo",
-        default_branch="main",
-    )
 
     async def handler(request: httpx2.Request) -> httpx2.Response:
         return httpx2.Response(
@@ -494,7 +469,7 @@ async def test_malformed_pull_request_body_raises_github_api_error() -> None:
 
         with pytest.raises(GitHubAPIError):
             await github_client.get_pull_request(
-                repository=repository,
+                repository=REPOSITORY,
                 pull_request_number=42,
             )
     finally:
@@ -518,3 +493,146 @@ async def test_injected_client_is_not_closed_by_github_rest_client() -> None:
     assert not http_client.is_closed
 
     await http_client.aclose()
+
+
+@pytest.mark.anyio
+async def test_create_pull_request_review_posts_comment_review() -> None:
+
+    pull_request = await _make_pull_request(REPOSITORY)
+
+    comments = [
+        GitHubReviewComment(
+            path="apps/example.py",
+            body="**[HIGH] correctness** — `finding-1`\n\nFix this issue.",
+            line=12,
+        ),
+        GitHubReviewComment(
+            path="apps/example.py",
+            body="**[MEDIUM] maintainability** — `finding-2`\n\nSimplify this.",
+            line=20,
+            start_line=18,
+        ),
+    ]
+
+    async def handler(request: httpx2.Request) -> httpx2.Response:
+        assert request.method == "POST"
+        assert request.url.path == (
+            "/repos/example-owner/example-repo/pulls/42/reviews"
+        )
+
+        payload = request.content
+        assert payload is not None
+
+        data = json.loads(payload)
+
+        assert data == {
+            "commit_id": "head-sha-456",
+            "body": "AI review for pull request #42.",
+            "event": "COMMENT",
+            "comments": [
+                {
+                    "path": "apps/example.py",
+                    "body": ("**[HIGH] correctness** — `finding-1`\n\nFix this issue."),
+                    "line": 12,
+                    "side": "RIGHT",
+                },
+                {
+                    "path": "apps/example.py",
+                    "body": (
+                        "**[MEDIUM] maintainability** — `finding-2`\n\nSimplify this."
+                    ),
+                    "line": 20,
+                    "side": "RIGHT",
+                    "start_line": 18,
+                    "start_side": "RIGHT",
+                },
+            ],
+        }
+
+        return httpx2.Response(
+            200,
+            json={"id": 12345},
+            request=request,
+        )
+
+    http_client = make_http_client(handler)
+
+    try:
+        github_client = make_rest_client(http_client)
+
+        review_id = await github_client.create_pull_request_review(
+            pull_request=pull_request,
+            commit_id="head-sha-456",
+            body="AI review for pull request #42.",
+            comments=comments,
+        )
+
+        assert review_id == 12345
+    finally:
+        await http_client.aclose()
+
+
+@pytest.mark.anyio
+async def test_create_pull_request_review_requires_review_id() -> None:
+
+    pull_request = await _make_pull_request(REPOSITORY)
+
+    async def handler(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(
+            200,
+            json={"id": "12345"},
+            request=request,
+        )
+
+    http_client = make_http_client(handler)
+
+    try:
+        github_client = make_rest_client(http_client)
+
+        with pytest.raises(GitHubAPIError):
+            await github_client.create_pull_request_review(
+                pull_request=pull_request,
+                commit_id=pull_request.head_sha,
+                body="AI review.",
+                comments=[],
+            )
+    finally:
+        await http_client.aclose()
+
+
+@pytest.mark.anyio
+async def test_create_pull_request_review_allows_empty_comments() -> None:
+
+    pull_request = await _make_pull_request(REPOSITORY)
+
+    async def handler(request: httpx2.Request) -> httpx2.Response:
+        data = json.loads(request.content)
+
+        assert data == {
+            "commit_id": pull_request.head_sha,
+            "body": "AI review.",
+            "event": "COMMENT",
+            "comments": [],
+        }
+
+        return httpx2.Response(
+            200,
+            json={"id": 999},
+            request=request,
+        )
+
+    http_client = make_http_client(handler)
+
+    try:
+        github_client = make_rest_client(http_client)
+
+        review_id = await github_client.create_pull_request_review(
+            pull_request=pull_request,
+            commit_id=pull_request.head_sha,
+            body="AI review.",
+            comments=[],
+        )
+
+        assert review_id == 999
+    finally:
+        await http_client.aclose()

@@ -173,6 +173,10 @@ For location:
 - Do not invent a line number merely to make a finding mappable.
 - Do not target a different file through location. Cross-file findings must use location=null.
 
+For each finding:
+- Set category to a concise issue category such as correctness, security, maintainability, performance, or testing.
+- Set description to a concise, specific explanation of the issue and its impact. Do not describe unrelated code or make unsupported claims.
+
 For inspection output, every finding status must have ststus "unresolved" because the finding describes
 an issue identified in the candidate currently being inspected.
 
@@ -265,6 +269,10 @@ For location:
 - Use location=null when you cannot confidently map the finding to a source location.
 - Do not invent a line number merely to make a finding mappable.
 - Do not target a different file through location. Cross-file findings must use location=null.
+
+For each finding:
+- Set category to a concise issue category such as correctness, security, maintainability, performance, or testing.
+- Set description to a concise, specific explanation of the issue and its impact. Do not describe unrelated code or make unsupported claims.
 
 For inspection output, every finding status must be "unresolved" because the finding describes
 an issue identified in the candidate currently being inspected.
