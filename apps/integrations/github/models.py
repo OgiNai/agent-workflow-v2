@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Literal, TypeAlias
+from uuid import UUID
+
+from apps.schemas.agent_outputs import Finding
+
+ReviewCommentSide: TypeAlias = Literal["LEFT", "RIGHT"]
 
 ChangedFileStatus: TypeAlias = Literal[
     "added",
@@ -63,3 +68,32 @@ class GitHubFileContent:
     content: str
     ref: str  # the hash signature of the entire PR's branch
     sha: str  # the hash signature of the current state of the file itself
+
+
+@dataclass(frozen=True)
+class GitHubWorkflowFindings:
+    """Findings produced by one file-level workflow."""
+
+    path: str
+    workflow_run_id: UUID
+    findings: tuple[Finding, ...]
+
+
+@dataclass(frozen=True)
+class GitHubReviewComment:
+    """A line-based comment included in a GitHub pull-request review."""
+
+    path: str
+    body: str
+    line: int
+    side: ReviewCommentSide = "RIGHT"
+    start_line: int | None = None
+    start_side: ReviewCommentSide | None = None
+
+
+@dataclass(frozen=True)
+class GitHubReviewDraft:
+    """Normalized review payload prepared by the adapter."""
+
+    body: str
+    comments: tuple[GitHubReviewComment, ...]

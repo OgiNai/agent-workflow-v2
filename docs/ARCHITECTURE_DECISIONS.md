@@ -64,3 +64,7 @@ PRContext contains pull-request metadata and the complete changed-file manifest,
 
 ---
 
+Findings carry optional application-level source locations. GitHub-specific comment coordinates are derived by the GitHub integration. Findings that cannot be mapped to a changed line are preserved and surfaced through the PR-level review summary rather than discarded or attached to an arbitrary line.
+
+---
+

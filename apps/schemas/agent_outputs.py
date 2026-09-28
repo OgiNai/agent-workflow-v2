@@ -2,7 +2,37 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+
+class FindingLocation(BaseModel):
+    """Optional source location for a finding in the inspected file."""
+
+    line: int = Field(
+        ge=1,
+        description="1-based source line where the finding applies.",
+    )
+    start_line: int | None = Field(
+        default=None,
+        ge=1,
+        description="1-based first line when the finding spans multiple lines.",
+    )
+    """
+    side: Literal["LEFT", "RIGHT"] = Field(
+        default="RIGHT",
+        description="Diff side associated with the source location.",
+    )
+    start_side: Literal["LEFT", "RIGHT"] | None = Field(
+        default=None,
+        description="Diff side associated with start_line.",
+    )
+    """
+
+    @model_validator(mode="after")
+    def validate_range(self) -> "FindingLocation":
+        if self.start_line is not None and self.start_line > self.line:
+            raise ValueError("start_line cannot be greater than line.")
+        return self
 
 
 class Finding(BaseModel):
@@ -19,6 +49,13 @@ class Finding(BaseModel):
     status: Literal["unresolved", "resolved"] = Field(
         default="unresolved",
         description="Whether the finding remains present in the current candidate.",
+    )
+    location: FindingLocation | None = Field(
+        default=None,
+        description=(
+            "Optional source location. Use only when the finding can be confidently "
+            "mapped to the inspected file."
+        ),
     )
 
 

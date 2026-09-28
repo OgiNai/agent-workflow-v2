@@ -141,6 +141,7 @@ async def test_build_review_requests_skips_unsupported_file_types(
 
     assert len(result) == 2
     assert result[0].code == supported_file_content.content
+    assert result[1].code == renamed_file_content.content
 
     assert github_client.get_file_content.await_count == 2
     assert github_client.get_file_content.await_args_list == [
@@ -160,10 +161,15 @@ async def test_build_review_requests_skips_unsupported_file_types(
 
     assert context is not None
     assert context.changed_files == [
+        unsupported_file,
         supported_file,
         renamed_file,
     ]
-    assert context.changed_files[1].previous_path == "apps/old_name.py"
+    assert context.changed_files[0].path == "assets/logo.png"
+    assert context.changed_files[1].path == "app/gallery.py"
+    assert context.changed_files[2].previous_path == "apps/old_name.py"
+
+    assert result[0].review_context is result[1].review_context
 
 
 @pytest.mark.anyio
@@ -257,21 +263,15 @@ async def test_build_review_requests_processes_multiple_supported_files(
     ]
 
     assert github_client.get_file_content.await_args_list == [
-        (
-            (),
-            {
-                "repository": pull_request.repository,
-                "path": first_file.path,
-                "ref": pull_request.head_sha,
-            },
+        call(
+            repository=pull_request.repository,
+            path=first_file.path,
+            ref=pull_request.head_sha,
         ),
-        (
-            (),
-            {
-                "repository": pull_request.repository,
-                "path": second_file.path,
-                "ref": pull_request.head_sha,
-            },
+        call(
+            repository=pull_request.repository,
+            path=second_file.path,
+            ref=pull_request.head_sha,
         ),
     ]
 
@@ -347,3 +347,12 @@ async def test_build_review_requests_filters_before_fetching_content(
         path=supported_file.path,
         ref=pull_request.head_sha,
     )
+
+    context = result[0].review_context
+
+    assert context is not None
+    assert context.changed_files == [
+        supported_file,
+        deleted_file,
+        unsupported_file,
+    ]

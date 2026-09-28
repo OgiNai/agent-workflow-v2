@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import PurePosixPath
 
 from apps.core.constants import ALLOWED_READ_EXTENSIONS
@@ -10,9 +11,15 @@ from apps.integrations.github.models import (
     GitHubChangedFile,
     GitHubFileContent,
     GitHubPullRequest,
+    GitHubReviewComment,
+    GitHubReviewDraft,
+    GitHubWorkflowFindings,
 )
+from apps.schemas.agent_outputs import Finding
 from apps.schemas.requests import ReviewRequest
 from apps.schemas.review_context import PRContext
+
+_HUNK_HEADER_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<new_start>\d+)(?:,(?:\d+))? @@")
 
 
 class GitHubAdapter:
@@ -119,3 +126,211 @@ class GitHubAdapter:
             code=file_content.content,
             review_context=review_context,
         )
+
+    async def publish_pull_request_review(
+        self,
+        *,
+        pull_request: GitHubPullRequest,
+        changed_files: list[GitHubChangedFile],
+        workflow_findings: list[GitHubWorkflowFindings],
+    ) -> int | None:
+        """Publish one COMMENT review containing all currently unresolved findings."""
+
+        draft = self.build_review_draft(
+            pull_request=pull_request,
+            changed_files=changed_files,
+            workflow_findings=workflow_findings,
+        )
+
+        if draft is None:
+            return None
+
+        return await self.client.create_pull_request_review(
+            pull_request=pull_request,
+            commit_id=pull_request.head_sha,
+            body=draft.body,
+            comments=list(draft.comments),
+        )
+
+    @classmethod
+    def build_review_draft(
+        cls,
+        *,
+        pull_request: GitHubPullRequest,
+        changed_files: list[GitHubChangedFile],
+        workflow_findings: list[GitHubWorkflowFindings],
+    ) -> GitHubReviewDraft | None:
+        """Map unresolved findings to inline comments or the review summary."""
+
+        changed_files_by_path = {
+            changed_file.path: changed_file for changed_file in changed_files
+        }
+
+        comments: list[GitHubReviewComment] = []
+        unmapped: list[GitHubWorkflowFindings] = []
+        current_findings = 0
+
+        for workflow_group in workflow_findings:
+            changed_file = changed_files_by_path.get(workflow_group.path)
+
+            for finding in workflow_group.findings:
+                if finding.status != "unresolved":
+                    continue
+
+                current_findings += 1
+
+                comment = cls._build_review_comment(
+                    finding=finding,
+                    changed_file=changed_file,
+                    workflow_run_id=str(workflow_group.workflow_run_id),
+                    path=workflow_group.path,
+                )
+
+                if comment is None:
+                    unmapped.append(
+                        GitHubWorkflowFindings(
+                            path=workflow_group.path,
+                            workflow_run_id=workflow_group.workflow_run_id,
+                            findings=(finding,),
+                        )
+                    )
+                else:
+                    comments.append(comment)
+
+        if current_findings == 0:
+            return None
+
+        return GitHubReviewDraft(
+            body=cls._build_review_body(
+                pull_request=pull_request,
+                mapped_count=len(comments),
+                unmapped=unmapped,
+            ),
+            comments=tuple(comments),
+        )
+
+    @classmethod
+    def _build_review_comment(
+        cls,
+        *,
+        finding: Finding,
+        changed_file: GitHubChangedFile | None,
+        workflow_run_id: str,
+        path: str,
+    ) -> GitHubReviewComment | None:
+        if changed_file is None or changed_file.patch is None:
+            return None
+
+        location = finding.location
+
+        if location is None or location.side != "RIGHT":
+            return None
+
+        line_hunks = cls._parse_right_side_lines(changed_file.patch)
+        line_hunk = line_hunks.get(location.line)
+
+        if line_hunk is None:
+            return None
+
+        start_line = location.start_line
+        start_side = location.start_side
+
+        if start_line is not None:
+            if start_side not in (None, "RIGHT"):
+                return None
+
+            start_hunk = line_hunks.get(start_line)
+
+            if start_hunk is None or start_hunk != line_hunk:
+                return None
+
+            if start_line == location.line:
+                start_line = None
+                start_side = None
+            else:
+                start_side = "RIGHT"
+
+        return GitHubReviewComment(
+            path=path,
+            body=(
+                f"**[{finding.severity}] {finding.category}** — `{finding.id}`\n\n"
+                f"{finding.description}\n\n"
+                f"Workflow run: `{workflow_run_id}`"
+            ),
+            line=location.line,
+            side="RIGHT",
+            start_line=start_line,
+            start_side=start_side,
+        )
+
+    @staticmethod
+    def _parse_right_side_lines(patch: str) -> dict[int, int]:
+        """Return current-file line numbers present in each unified-diff hunk."""
+
+        line_hunks: dict[int, int] = {}
+        new_line: int | None = None
+        hunk_number = 0
+
+        for raw_line in patch.splitlines():
+            if raw_line.startswith("@@ "):
+                match = _HUNK_HEADER_RE.match(raw_line)
+
+                if match is None:
+                    return {}
+
+                hunk_number += 1
+                new_line = int(match.group("new_start"))
+                continue
+
+            if new_line is None or raw_line.startswith("\\"):
+                continue
+
+            prefix = raw_line[:1]
+
+            if prefix in {" ", "+"}:
+                line_hunks[new_line] = hunk_number
+                new_line += 1
+            elif prefix == "-":
+                continue
+            else:
+                return {}
+
+        return line_hunks
+
+    @staticmethod
+    def _build_review_body(
+        *,
+        pull_request: GitHubPullRequest,
+        mapped_count: int,
+        unmapped: list[GitHubWorkflowFindings],
+    ) -> str:
+        lines = [
+            f"AI review for pull request #{pull_request.number}.",
+        ]
+
+        if mapped_count:
+            lines.append(
+                f"{mapped_count} finding(s) were mapped to inline review comments."
+            )
+
+        if unmapped:
+            lines.extend(
+                [
+                    "",
+                    "### Findings without a safe inline location",
+                    "",
+                    "The following findings could not be mapped to a changed line and ",
+                    "are preserved here rather than attached to an arbitrary line:",
+                ]
+            )
+
+            for workflow_group in unmapped:
+                for finding in workflow_group.findings:
+                    lines.append(
+                        f"- **[{finding.severity}] {finding.category}** "
+                        f"`{finding.id}` in `{workflow_group.path}` — "
+                        f"{finding.description} "
+                        f"(workflow run `{workflow_group.workflow_run_id}`)"
+                    )
+
+        return "\n".join(lines)

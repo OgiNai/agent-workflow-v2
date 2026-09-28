@@ -27,6 +27,7 @@ from apps.integrations.github.models import (
     GitHubFileContent,
     GitHubPullRequest,
     GitHubRepository,
+    GitHubReviewComment,
 )
 
 
@@ -96,6 +97,31 @@ class GitHubRESTClient:
         except httpx2.RequestError as exc:
             raise GitHubAPIError("GitHub request failed.") from exc
 
+        return self._parse_response(response)
+
+    async def _post(
+        self,
+        path: str,
+        *,
+        json: dict[str, Any],
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        client = self._get_client()
+
+        try:
+            response = await client.post(
+                path,
+                headers=self._build_headers(),
+                json=json,
+            )
+        except httpx2.RequestError as exc:
+            raise GitHubAPIError("GitHub request failed.") from exc
+
+        return self._parse_response(response)
+
+    @staticmethod
+    def _parse_response(
+        response: httpx2.Response,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         if response.status_code == 401:
             raise GitHubAuthenticationError("GitHub authentication failed.")
 
@@ -327,3 +353,53 @@ class GitHubRESTClient:
             ref=ref,
             sha=self._require_string(payload, "sha"),
         )
+
+    async def create_pull_request_review(
+        self,
+        *,
+        pull_request: GitHubPullRequest,
+        commit_id: str,
+        body: str,
+        comments: list[GitHubReviewComment],
+    ) -> int:
+        """Create one submitted COMMENT review containing zero or more comments."""
+
+        payload: dict[str, Any] = {
+            "commit_id": commit_id,
+            "body": body,
+            "event": "COMMENT",
+            "comments": [
+                {
+                    "path": comment.path,
+                    "body": comment.body,
+                    "line": comment.line,
+                    "side": comment.side,
+                    **(
+                        {
+                            "start_line": comment.start_line,
+                            "start_side": comment.start_side or comment.side,
+                        }
+                        if comment.start_line is not None
+                        else {}
+                    ),
+                }
+                for comment in comments
+            ],
+        }
+
+        response = await self._post(
+            f"/repos/{pull_request.repository.owner}/"
+            f"{pull_request.repository.name}/pulls/{pull_request.number}/reviews",
+            json=payload,
+        )
+
+        if not isinstance(response, dict):
+            raise GitHubAPIError("GitHub review response has an unexpected format.")
+
+        review_id = response.get("id")
+        if not isinstance(review_id, int):
+            raise GitHubAPIError(
+                "GitHub review response is missing a valid 'id' field."
+            )
+
+        return review_id
