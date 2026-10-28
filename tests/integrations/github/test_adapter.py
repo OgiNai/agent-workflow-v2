@@ -673,3 +673,60 @@ async def test_publish_pull_request_review_uses_workflow_file_path(
     comment = github_client.create_pull_request_review.await_args.kwargs["comments"][0]
 
     assert comment.path == "apps/example.py"
+
+
+@pytest.mark.anyio
+async def test_build_file_review_requests_preserves_file_paths(
+    adapter: GitHubAdapter,
+    github_client: AsyncMock,
+    pull_request: GitHubPullRequest,
+) -> None:
+    first_file = GitHubChangedFile(
+        path="apps/first.py",
+        status="modified",
+        additions=1,
+        deletions=0,
+        changes=1,
+        patch="@@ -1 +1 @@",
+    )
+    second_file = GitHubChangedFile(
+        path="apps/second.py",
+        status="added",
+        additions=1,
+        deletions=0,
+        changes=1,
+        patch="@@ -0,0 +1 @@",
+    )
+
+    github_client.get_file_content.side_effect = [
+        GitHubFileContent(
+            path=first_file.path,
+            content="first_code = True",
+            ref=pull_request.head_sha,
+            sha="first-sha",
+        ),
+        GitHubFileContent(
+            path=second_file.path,
+            content="second_code = True",
+            ref=pull_request.head_sha,
+            sha="second-sha",
+        ),
+    ]
+
+    result = await adapter.build_file_review_requests(
+        pull_request,
+        changed_files=[first_file, second_file],
+    )
+
+    assert [item.path for item in result] == [
+        "apps/first.py",
+        "apps/second.py",
+    ]
+    assert [item.request.code for item in result] == [
+        "first_code = True",
+        "second_code = True",
+    ]
+    assert result[0].request.review_context is result[1].request.review_context
+
+    github_client.list_pull_request_files.assert_not_awaited()
+    assert github_client.get_file_content.await_count == 2

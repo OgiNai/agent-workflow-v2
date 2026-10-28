@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from pathlib import PurePosixPath
 
 from apps.core.constants import ALLOWED_READ_EXTENSIONS
@@ -22,6 +23,14 @@ from apps.schemas.review_context import PRContext
 _HUNK_HEADER_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<new_start>\d+)(?:,(?:\d+))? @@")
 
 
+@dataclass(frozen=True)
+class GitHubFileReviewRequest:
+    """Associate a GitHub file path with its file-level workflow request."""
+
+    path: str
+    request: ReviewRequest
+
+
 class GitHubAdapter:
     """Translate GitHub resources into application workflow inputs."""
 
@@ -32,12 +41,23 @@ class GitHubAdapter:
         self,
         pull_request: GitHubPullRequest,
     ) -> list[ReviewRequest]:
-        """Retrieve and map supported pull request files to workflow requests."""
+        """Build workflow requests while preserving the existing public interface."""
+        file_requests = await self.build_file_review_requests(pull_request)
+        return [file_request.request for file_request in file_requests]
+
+    async def build_file_review_requests(
+        self,
+        pull_request: GitHubPullRequest,
+        *,
+        changed_files: list[GitHubChangedFile] | None = None,
+    ) -> list[GitHubFileReviewRequest]:
+        """Build file-level requests with explicit paths and shared PR context."""
         repository = pull_request.repository
 
-        changed_files = await self.client.list_pull_request_files(
-            pull_request,
-        )
+        if changed_files is None:
+            changed_files = await self.client.list_pull_request_files(
+                pull_request,
+            )
 
         supported_files = [
             changed_file
@@ -65,19 +85,25 @@ class GitHubAdapter:
             file_content.path: file_content for file_content in file_contents
         }
 
-        return [
-            review_request
-            for supported_file in supported_files
-            if (
-                review_request := self._build_review_request(
-                    pull_request=pull_request,
-                    changed_file=supported_file,
-                    file_content=contents_by_path.get(supported_file.path),
-                    review_context=review_context,
-                )
+        file_requests: list[GitHubFileReviewRequest] = []
+
+        for supported_file in supported_files:
+            request = self._build_review_request(
+                pull_request=pull_request,
+                changed_file=supported_file,
+                file_content=contents_by_path.get(supported_file.path),
+                review_context=review_context,
             )
-            is not None
-        ]
+
+            if request is not None:
+                file_requests.append(
+                    GitHubFileReviewRequest(
+                        path=supported_file.path,
+                        request=request,
+                    )
+                )
+
+        return file_requests
 
     @staticmethod
     def _build_pr_context(
