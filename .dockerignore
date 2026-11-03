@@ -1,0 +1,42 @@
+
+# Git
+.git
+.github
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Tests and development
+tests/
+benchmarks/
+.ipynb_checkpoints/
+.ipython/
+
+# Local development files
+.idea/
+.vscode/
+.DS_Store
+
+# Generated workflow artifacts
+workspace/*
+!workspace/.gitkeep
+
+# Documentation
+docs/
+README.md
+
+# Build outputs
+build/
+dist/
+*.log
