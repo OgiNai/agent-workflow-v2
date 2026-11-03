@@ -78,9 +78,12 @@ class BaseAgent:
 
             usage = get_last_llm_usage()
             if usage is not None:
-                span.set_attribute("llm.prompt_tokens", usage.prompt_tokens)
-                span.set_attribute("llm.completion_tokens", usage.completion_tokens)
-                span.set_attribute("llm.total_tokens", usage.total_tokens)
+                if usage.prompt_tokens is not None:
+                    span.set_attribute("llm.prompt_tokens", usage.prompt_tokens)
+                if usage.completion_tokens is not None:
+                    span.set_attribute("llm.completion_tokens", usage.completion_tokens)
+                if usage.total_tokens is not None:
+                    span.set_attribute("llm.total_tokens", usage.total_tokens)
                 if usage.cached_tokens is not None:
                     span.set_attribute("llm.cached_tokens", usage.cached_tokens)
 

@@ -2,15 +2,19 @@
 
 from typing import Final
 
-ALLOWED_READ_EXTENSIONS: Final[frozenset[str]] = {
-    ".py",
-    ".txt",
-    ".md",
-    ".json",
-    ".yaml",
-    ".yml",
-}
-ALLOWED_WRITE_EXTENSIONS: Final[frozenset[str]] = {".py", ".txt", ".md", ".json"}
+ALLOWED_READ_EXTENSIONS: Final[frozenset[str]] = frozenset(
+    {
+        ".py",
+        ".txt",
+        ".md",
+        ".json",
+        ".yaml",
+        ".yml",
+    }
+)
+ALLOWED_WRITE_EXTENSIONS: Final[frozenset[str]] = frozenset(
+    {".py", ".txt", ".md", ".json"}
+)
 MAX_FILE_SIZE_BYTES: Final[int] = 200_000
 
 MAX_INSTRUCTION_LENGTH: Final[int] = 10_000

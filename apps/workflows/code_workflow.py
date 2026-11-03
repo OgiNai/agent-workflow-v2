@@ -6,7 +6,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from functools import partial
 from time import perf_counter
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 from uuid import uuid4
 
 from opentelemetry.trace import SpanKind, Status, StatusCode
@@ -578,7 +578,7 @@ class CodeWorkflow:
         step_order: int,
         round_number: int | None,
         latency_ms: float | None,
-        status: str,
+        status: Literal["success", "failed", "skipped"],
         input_data: dict[str, Any] | None,
         metadata: dict[str, Any],
         detail: str | None,

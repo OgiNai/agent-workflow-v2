@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-from typing import Any, Self, get_args
+from typing import Any, Self, cast, get_args
 
 import httpx2
 
@@ -274,9 +274,9 @@ class GitHubRESTClient:
                     )
 
                 status = item.get("status")
-
                 if status not in get_args(ChangedFileStatus):
                     raise GitHubAPIError("GitHub returned an unsupported file status.")
+                status = cast(ChangedFileStatus, status)
 
                 previous_path = item.get("previous_filename")
                 if previous_path is not None and not isinstance(

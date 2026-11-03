@@ -40,5 +40,5 @@ class PlannerAgent:
             steps=steps,
             notes=["Deterministic planner."],
         )
-        latency_ms = round((time.perf_counter() - started) * 1000, 2)
+        latency_ms = int((time.perf_counter() - started) * 1000)
         return plan, latency_ms

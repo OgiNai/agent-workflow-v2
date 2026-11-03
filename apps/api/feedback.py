@@ -69,7 +69,7 @@ async def create_feedback(
     return FeedbackResponse(
         id=feedback_record.id,
         workflow_run_id=feedback_record.workflow_id,
-        rating=feedback_record.rating,
+        rating=feedback.rating,
         accepted=feedback_record.accepted,
         comment=feedback_record.comments,
     )

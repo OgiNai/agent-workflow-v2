@@ -1,6 +1,6 @@
 """Parser for structured pytest-json-report output."""
 
-from typing import Any
+from typing import Any, Literal
 
 from apps.schemas.tools import TestCaseResult, TestRunResult
 
@@ -210,7 +210,7 @@ def _determine_status(
     exit_code: int | None,
     execution_errors: int,
     tests_failed: int,
-) -> str:
+) -> Literal["passed", "failed", "error", "timeout"]:
     """Determine the application-level execution status."""
 
     if execution_errors > 0:

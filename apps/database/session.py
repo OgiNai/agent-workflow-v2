@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator
 from functools import lru_cache
 
 from sqlalchemy import text
@@ -38,7 +39,7 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
     )
 
 
-async def get_db_session() -> AsyncSession:
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provide an application database session."""
     async with get_session_factory()() as session:
         yield session

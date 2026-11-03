@@ -1,6 +1,6 @@
 """Structured outputs returned by agents."""
 
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -123,9 +123,12 @@ class SecurityAuditOutput(BaseModel):
         if not unresolved:
             return "NONE"
 
-        return max(
-            unresolved,
-            key=lambda severity: severities[severity],
+        return cast(
+            Literal["NONE", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
+            max(
+                unresolved,
+                key=lambda severity: severities[severity],
+            ),
         )
 
     @property

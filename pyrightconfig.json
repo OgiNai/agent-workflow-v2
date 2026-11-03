@@ -1,0 +1,22 @@
+
+{
+    "include": [
+        "apps"
+    ],
+    "exclude": [
+        "**/__pycache__",
+        ".pytest_cache",
+        "**/.venv",
+        "alembic",
+        "benchmarks",
+        "docs",
+        "tests",
+        "workspace",
+        "**/node_modules"
+    ],  
+    "pythonVersion": "3.11",
+    "pythonPlatform": "Linux",
+    "typeCheckingMode": "standard",
+    "venvPath": ".",
+    "venv": ".venv"
+}

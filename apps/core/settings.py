@@ -40,14 +40,14 @@ class AuthSettings(BaseSettings):
     model_config = shared_config
 
 
-class WorkflowSettings(BaseSettings, frozen=True):
+class WorkflowSettings(BaseSettings):
     workflow_max_rounds: int = DEFAULT_MAX_ROUNDS
 
     # Development only
     workflow_force_retry_rounds: int = 0
     workflow_always_retry: bool = False
 
-    model_config = shared_config
+    model_config = SettingsConfigDict(**shared_config, frozen=True)
 
 
 class TelemetrySettings(BaseSettings):
@@ -76,7 +76,7 @@ class LLMSettings(BaseSettings):
 # cache settings so they are only created once and then reused
 @lru_cache
 def get_auth_settings() -> AuthSettings:
-    return AuthSettings()
+    return AuthSettings()  # pyright: ignore[reportCallIssue]
 
 
 @lru_cache

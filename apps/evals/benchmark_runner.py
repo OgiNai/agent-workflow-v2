@@ -9,7 +9,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from apps.core.settings import get_llm_settings
+from apps.core.settings import get_llm_settings, get_workflow_settings
+from apps.core.workflow_config import WorkflowConfig
 from apps.llm.prompts import PROMPT_VERSIONS
 from apps.schemas.benchmark import (
     BenchmarkAggregateMetrics,
@@ -133,7 +134,13 @@ async def run_benchmark(
 ) -> list[BenchmarkCaseResult]:
     """Execute all benchmark cases sequentially."""
 
-    workflow = CodeWorkflow()
+    workflow_settings = get_workflow_settings()
+    workflow_config = WorkflowConfig(
+        max_rounds=workflow_settings.workflow_max_rounds,
+        force_retry_rounds=workflow_settings.workflow_force_retry_rounds,
+        always_retry=workflow_settings.workflow_always_retry,
+    )
+    workflow = CodeWorkflow(config=workflow_config)
     results: list[BenchmarkCaseResult] = []
 
     for case in cases:
