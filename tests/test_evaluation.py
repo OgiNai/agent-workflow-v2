@@ -14,6 +14,8 @@ from apps.evals.scoring import (
 from apps.schemas.agent_outputs import Finding
 from apps.schemas.tools import TestRunResult
 
+pytestmark = pytest.mark.unit
+
 
 def make_test_result(
     *,

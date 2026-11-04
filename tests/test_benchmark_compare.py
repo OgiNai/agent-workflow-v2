@@ -3,6 +3,8 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
+import pytest
+
 from apps.evals.benchmark_compare import (
     BenchmarkComparison,
     MetricComparison,
@@ -13,6 +15,8 @@ from apps.schemas.benchmark import (
     BenchmarkAggregateMetrics,
     BenchmarkReport,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def make_report(

@@ -21,6 +21,9 @@ from apps.integrations.github.models import (
     GitHubReviewComment,
 )
 
+pytestmark = pytest.mark.integration
+
+
 TOKEN = get_auth_settings().github_token.get_secret_value()
 
 REPOSITORY = GitHubRepository(

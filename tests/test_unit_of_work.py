@@ -6,6 +6,9 @@ from apps.database.models import WorkflowRun
 from apps.database.session import close_database_engine
 from apps.repositories.unit_of_work import UnitOfWork
 
+pytestmark = pytest.mark.integration
+pytestmark = pytest.mark.database
+
 
 @pytest.mark.anyio
 async def test_commit() -> None:

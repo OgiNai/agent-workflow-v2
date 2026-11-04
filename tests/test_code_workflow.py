@@ -27,6 +27,9 @@ from apps.schemas.review_context import PRContext
 from apps.tools.test_runner import TestRunResult
 from apps.workflows.code_workflow import CodeWorkflow
 
+pytestmark = pytest.mark.unit
+pytestmark = pytest.mark.database
+
 
 @pytest.fixture
 def workflow_config() -> WorkflowConfig:

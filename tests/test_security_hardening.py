@@ -15,6 +15,7 @@ from apps.tools.file_path_helpers import resolve_project_file_path
 from apps.tools.test_runner import run_pytest_for_code
 
 
+@pytest.mark.unit
 def test_review_request_rejects_oversized_instruction() -> None:
     with pytest.raises(ValidationError):
         ReviewRequest(
@@ -22,6 +23,7 @@ def test_review_request_rejects_oversized_instruction() -> None:
         )
 
 
+@pytest.mark.unit
 def test_review_request_rejects_oversized_inline_code() -> None:
     with pytest.raises(ValidationError):
         ReviewRequest(
@@ -30,6 +32,7 @@ def test_review_request_rejects_oversized_inline_code() -> None:
         )
 
 
+@pytest.mark.unit
 def test_review_request_rejects_oversized_file_path() -> None:
     with pytest.raises(ValidationError):
         ReviewRequest(
@@ -38,6 +41,7 @@ def test_review_request_rejects_oversized_file_path() -> None:
         )
 
 
+@pytest.mark.unit
 def test_resolve_project_file_path_rejects_parent_traversal(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -51,6 +55,7 @@ def test_resolve_project_file_path_rejects_parent_traversal(
         resolve_project_file_path("../outside.py")
 
 
+@pytest.mark.unit
 def test_resolve_project_file_path_rejects_symlink_escape(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -80,6 +85,8 @@ def test_resolve_project_file_path_rejects_symlink_escape(
         resolve_project_file_path("linked.py")
 
 
+@pytest.mark.subprocess
+@pytest.mark.integration
 @pytest.mark.anyio
 async def test_run_pytest_for_code_does_not_inherit_application_secrets(
     monkeypatch: pytest.MonkeyPatch,
@@ -111,6 +118,8 @@ def test_application_secret_is_not_available():
     assert secret_value not in result.stderr
 
 
+@pytest.mark.subprocess
+@pytest.mark.integration
 @pytest.mark.anyio
 async def test_run_pytest_for_code_preserves_timeout_boundary() -> None:
     code = """

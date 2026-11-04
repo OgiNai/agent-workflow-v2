@@ -1,6 +1,10 @@
 """Tests for structured pytest JSON report parsing."""
 
+import pytest
+
 from apps.tools.pytest_report import parse_pytest_json_report
+
+pytestmark = pytest.mark.unit
 
 
 def test_parse_passing_tests() -> None:

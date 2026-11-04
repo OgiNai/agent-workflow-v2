@@ -40,3 +40,9 @@ exclude = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+markers = [
+    "unit: isolated component tests",
+    "integration: tests involving interactions between application components",
+    "database: tests requiring a database connection",
+    "subprocess: tests executing external processes",
+]

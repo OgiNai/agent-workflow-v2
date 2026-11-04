@@ -5,6 +5,8 @@ from pydantic import ValidationError
 
 from apps.core.settings import LLMSettings
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize(
     ("field", "value"),

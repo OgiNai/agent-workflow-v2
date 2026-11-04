@@ -23,6 +23,9 @@ from apps.integrations.github.models import (
 )
 from apps.schemas.agent_outputs import Finding, FindingLocation
 
+pytestmark = pytest.mark.integration
+
+
 REPOSITORY = GitHubRepository(
     owner="example-owner",
     name="example-repo",

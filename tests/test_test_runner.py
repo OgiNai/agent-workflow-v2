@@ -4,6 +4,9 @@ import pytest
 
 from apps.tools.test_runner import run_pytest_for_code
 
+pytestmark = pytest.mark.integration
+pytestmark = pytest.mark.subprocess
+
 
 @pytest.mark.anyio
 async def test_run_pytest_for_code_passes() -> None:

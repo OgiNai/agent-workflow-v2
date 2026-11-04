@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 
 from apps.main import code_app
 
+pytestmark = pytest.mark.integration
+
 
 def test_health() -> None:
     with TestClient(code_app) as client:

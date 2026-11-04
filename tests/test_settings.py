@@ -10,6 +10,8 @@ from apps.core.settings import (
     WorkflowSettings,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def test_auth_settings_load_environment_configuration(
     monkeypatch: pytest.MonkeyPatch,

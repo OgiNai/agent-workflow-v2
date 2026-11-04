@@ -16,6 +16,8 @@ from apps.integrations.github.models import (
 from apps.schemas.agent_outputs import Finding, FindingLocation
 from apps.schemas.requests import ReviewRequest
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture
 def github_client() -> AsyncMock:

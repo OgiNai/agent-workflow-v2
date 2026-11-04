@@ -11,6 +11,8 @@ from apps.main import code_app
 from apps.schemas.agent_outputs import EvaluatorOutput
 from apps.schemas.responses import ReviewResponse
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 def authenticated_client():

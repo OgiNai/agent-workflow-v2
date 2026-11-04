@@ -1,8 +1,12 @@
+import pytest
+
 from apps.schemas.requests import ReviewRequest
 from apps.workflows.input_router import (
     _extract_markdown_code,
     route_input,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_extract_markdown_code():

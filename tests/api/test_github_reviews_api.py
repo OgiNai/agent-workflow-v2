@@ -15,6 +15,8 @@ from apps.schemas.responses import (
     GitHubPullRequestReviewResponse,
 )
 
+pytestmark = pytest.mark.integration
+
 ENDPOINT = "/github/repositories/example/project/pull-requests/42/review"
 
 

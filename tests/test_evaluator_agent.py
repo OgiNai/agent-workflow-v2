@@ -1,3 +1,5 @@
+import pytest
+
 from apps.agents.evaluator_agent import EvaluatorAgent
 from apps.schemas.agent_outputs import (
     EvaluatorOutput,
@@ -6,6 +8,8 @@ from apps.schemas.agent_outputs import (
     SecurityAuditOutput,
 )
 from apps.schemas.tools import TestRunResult
+
+pytestmark = pytest.mark.unit
 
 
 def make_finding(

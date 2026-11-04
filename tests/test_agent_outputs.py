@@ -1,4 +1,8 @@
+import pytest
+
 from apps.schemas.agent_outputs import Finding, ReviewerOutput, SecurityAuditOutput
+
+pytestmark = pytest.mark.unit
 
 
 def test_finding_defaults_to_unresolved():

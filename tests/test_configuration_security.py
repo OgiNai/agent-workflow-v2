@@ -34,6 +34,7 @@ def make_auth_settings() -> AuthSettings:
     )
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize("representation", [repr, str])
 def test_secret_settings_are_masked_in_string_representations(
     representation,
@@ -49,6 +50,7 @@ def test_secret_settings_are_masked_in_string_representations(
     assert "**********" in rendered
 
 
+@pytest.mark.unit
 @pytest.mark.anyio
 async def test_authentication_does_not_log_api_token(
     monkeypatch: pytest.MonkeyPatch,
@@ -72,6 +74,7 @@ async def test_authentication_does_not_log_api_token(
     assert SECRET_API_TOKEN not in caplog.text
 
 
+@pytest.mark.unit
 def test_llm_client_does_not_log_api_key(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
@@ -116,6 +119,7 @@ def test_llm_client_does_not_log_api_key(
         monkeypatch.setattr("apps.llm.gemini_client._client", None)
 
 
+@pytest.mark.integration
 @pytest.mark.anyio
 async def test_configuration_secrets_do_not_reach_api_error_response(
     monkeypatch: pytest.MonkeyPatch,
@@ -175,6 +179,7 @@ async def test_configuration_secrets_do_not_reach_api_error_response(
     assert SECRET_DATABASE_URL not in response.text
 
 
+@pytest.mark.integration
 @pytest.mark.anyio
 async def test_persisted_workflow_state_does_not_expose_configuration_secrets(
     monkeypatch: pytest.MonkeyPatch,
@@ -251,6 +256,7 @@ async def test_persisted_workflow_state_does_not_expose_configuration_secrets(
         await close_database_engine()
 
 
+@pytest.mark.unit
 def test_benchmark_report_does_not_expose_sensitive_input() -> None:
     from datetime import UTC, datetime
     from pathlib import Path

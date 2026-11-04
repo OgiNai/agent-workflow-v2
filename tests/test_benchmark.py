@@ -22,6 +22,8 @@ from apps.schemas.benchmark import (
 from apps.schemas.responses import ReviewResponse
 from apps.schemas.workflow import WorkflowStepTrace
 
+pytestmark = pytest.mark.unit
+
 CASES_PATH = Path("benchmarks/cases")
 
 

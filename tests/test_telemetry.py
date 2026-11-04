@@ -5,6 +5,8 @@ import pytest
 from apps.core.settings import TelemetrySettings
 from apps.observability import telemetry
 
+pytestmark = pytest.mark.unit
+
 
 def test_telemetry_settings_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)

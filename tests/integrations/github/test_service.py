@@ -14,6 +14,8 @@ from apps.schemas.agent_outputs import EvaluatorOutput, Finding, FindingLocation
 from apps.schemas.requests import ReviewRequest
 from apps.schemas.responses import ReviewResponse
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture
 def repository() -> GitHubRepository:

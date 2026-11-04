@@ -47,7 +47,7 @@ class WorkflowSettings(BaseSettings):
     workflow_force_retry_rounds: int = 0
     workflow_always_retry: bool = False
 
-    model_config = SettingsConfigDict(**shared_config, frozen=True)
+    model_config = SettingsConfigDict(**{**shared_config, "frozen": True})
 
 
 class TelemetrySettings(BaseSettings):

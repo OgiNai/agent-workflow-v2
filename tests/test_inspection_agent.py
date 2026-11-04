@@ -7,6 +7,8 @@ from apps.integrations.github.models import GitHubChangedFile
 from apps.schemas.agent_outputs import Finding, ReviewerOutput, SecurityAuditOutput
 from apps.schemas.review_context import PRContext
 
+pytestmark = pytest.mark.unit
+
 
 def test_reviewer_findings_receive_stable_ids():
     finding = Finding(
